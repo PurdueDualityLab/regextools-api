@@ -1,0 +1,19 @@
+
+syntax = "proto3";
+
+package regextools;
+
+message Query {
+  repeated string positive = 1;
+  repeated string negative = 2;
+}
+
+
+message QueryResults {
+  uint64 total = 1;
+  repeated string results = 2;
+}
+
+service QueryService {
+  rpc ExecQuery(Query) returns (QueryResults) {}
+}

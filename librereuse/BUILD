@@ -1,0 +1,37 @@
+
+cc_library(
+    name = "rereuse",
+    srcs = [
+        "db/cluster.cc",
+        "db/parallel_regex_cluster_repository.cc",
+        "db/pattern_reader.cc",
+        "db/regex_cluster_repository.cc",
+        "db/regex_repository.cc",
+        "query/base_regex_query.cc",
+        "query/cluster_match_query.cc",
+        "query/fuzzy_cluster_query.cc",
+        "query/match_query.cc",
+        "query/miss_score.cc",
+    ],
+    hdrs = [
+        "db/cluster.h",
+        "db/parallel_regex_cluster_repository.h",
+        "db/pattern_reader.h",
+        "db/regex_cluster_repository.h",
+        "db/regex_repository.h",
+        "query/abstract_score.h",
+        "query/base_cluster_query.h",
+        "query/base_regex_query.h",
+        "query/cluster_match_query.h",
+        "query/fuzzy_cluster_query.h",
+        "query/match_query.h",
+        "query/miss_score.h",
+        "util/is_iterable.h",
+        "util/stats.h",
+    ],
+    visibility = ["PUBLIC"],
+    deps = [
+        "///third_party/cc/re2//:re2",
+        "///third_party/cc/nlohmann_json//:json",
+    ],
+)
