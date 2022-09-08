@@ -1,4 +1,3 @@
-
 cc_library(
     name = "rereuse",
     srcs = [
@@ -29,9 +28,9 @@ cc_library(
         "util/is_iterable.h",
         "util/stats.h",
     ],
-    visibility = ["PUBLIC"],
+    visibility = ["//visibility:public"],
     deps = [
-        "///third_party/cc/re2//:re2",
-        "///third_party/cc/nlohmann_json//:json",
+        "@com_github_nlohmann_json//:json",
+        "@com_googlesource_code_re2//:re2",
     ],
 )

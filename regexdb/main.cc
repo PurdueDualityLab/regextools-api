@@ -3,6 +3,7 @@
 //
 
 #include <iostream>
+#include <memory>
 #include <grpc++/grpc++.h>
 #include "query_service.h"
 

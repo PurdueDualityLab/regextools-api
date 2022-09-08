@@ -1,17 +1,21 @@
 package main
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
+	"golang.org/x/net/context"
+	"log"
 )
 
 func main() {
-	r := gin.Default()
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "pong",
-		})
-	})
-	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+	var err error
+
+	ctx := context.Background()
+
+	router := gin.Default()
+	router.POST("/query", QueryHandler(ctx))
+
+	err = router.Run()
+	if err != nil {
+		log.Fatalf("Error while running server: %v", err)
+	}
 }

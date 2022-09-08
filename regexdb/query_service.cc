@@ -8,7 +8,8 @@
 
 regextools::QueryServiceImpl::QueryServiceImpl(unsigned int workers, const std::string &path) {
     auto clusters = rereuse::db::read_semantic_clusters(path);
-    repo = std::make_unique<rereuse::db::ParallelRegexClusterRepository>(workers);
+    // repo = std::make_unique<rereuse::db::ParallelRegexClusterRepository>(workers);
+    repo = std::make_unique<rereuse::db::RegexClusterRepository>();
     for (auto &cluster : clusters) {
         repo->add_cluster(std::move(cluster));
     }
@@ -28,5 +29,7 @@ grpc::Status regextools::QueryServiceImpl::ExecQuery(::grpc::ServerContext *cont
     }
 
     response->set_total(results.size());
+
+    std::cout << "Handled instance. Got " << results.size() << " results" << std::endl;
     return grpc::Status::OK;
 }

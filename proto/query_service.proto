@@ -3,6 +3,8 @@ syntax = "proto3";
 
 package regextools;
 
+option go_package = "github.com/regextools/protos/query_service";
+
 message Query {
   repeated string positive = 1;
   repeated string negative = 2;

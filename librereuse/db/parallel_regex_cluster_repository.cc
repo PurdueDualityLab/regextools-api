@@ -80,7 +80,7 @@ public:
             // Repeat while there is work to do
             while (!task_queue->empty()) {
                 // Get the next task to be computed
-                auto task = std::move(task_queue->pop());
+                auto task = task_queue->pop();
                 // Get the tasks future result
                 auto task_result = task.get_future();
                 // Run the task

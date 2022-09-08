@@ -7,6 +7,6 @@ cc_binary(
     ],
     deps = [
         "//librereuse:rereuse",
-        "//proto:query_service_proto",
+        "//proto:cpp_query_service_proto",
     ],
 )

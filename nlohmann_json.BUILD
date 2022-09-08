@@ -4,8 +4,6 @@ cc_library(
         "single_include/nlohmann/json.hpp",
         "single_include/nlohmann/json_fwd.hpp",
     ],
-    includes = [
-        "./single_include/",
-    ],
-    visibility = ["PUBLIC"],
+    includes = ["single_include/"],
+    visibility = ["//visibility:public"],
 )

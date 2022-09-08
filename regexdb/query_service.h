@@ -17,7 +17,7 @@ namespace regextools {
                                ::regextools::QueryResults *response) override;
 
     private:
-        std::unique_ptr<rereuse::db::ParallelRegexClusterRepository> repo;
+        std::unique_ptr<rereuse::db::RegexClusterRepository> repo;
     };
 }
 
