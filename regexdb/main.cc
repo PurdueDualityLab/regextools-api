@@ -8,7 +8,15 @@
 #include "query_service.h"
 
 int main(int argc, const char **argv) {
-    regextools::QueryServiceImpl service(7, "/home/charlie/Programming/redb/db-20000-clusters.json");
+
+    // std::string fallback = "/home/charlie/Programming/redb/db-20000-clusters.json";
+
+    const char *clusterFile = getenv("REGEXDB_CLUSTER_FILE");
+    if (!clusterFile) {
+        throw std::runtime_error("REGEXDB_CLUSTER_FILE environment variable must be set");
+    }
+
+    regextools::QueryServiceImpl service(7, std::string(clusterFile));
     grpc::ServerBuilder serverBuilder;
     serverBuilder.AddListeningPort("0.0.0.0:50051", grpc::InsecureServerCredentials());
     serverBuilder.RegisterService(&service);

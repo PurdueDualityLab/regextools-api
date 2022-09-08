@@ -23,6 +23,8 @@ namespace rereuse::db {
         explicit RegexClusterRepository(int maxClusterSize, const std::unordered_set<std::string> &patterns);
         explicit RegexClusterRepository(int maxClusterSize, const std::string& path);
 
+        virtual ~RegexClusterRepository() = default;
+
         int cluster_count() const { return this->clusters.size(); }
         int pattern_count() const;
         bool add_cluster(std::unique_ptr<Cluster> cluster);
