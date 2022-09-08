@@ -1,5 +1,6 @@
 # Need that archive
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 
 # Set up go
 http_archive(
@@ -46,6 +47,7 @@ http_archive(
     ],
 )
 
+# RE2 - regex engine dependency
 http_archive(
     name = "com_googlesource_code_re2",
     sha256 = "f89c61410a072e5cbcf8c27e3a778da7d6fd2f2b5b1445cd4f4508bee946ab0f",
@@ -53,12 +55,31 @@ http_archive(
     url = "https://github.com/google/re2/archive/refs/tags/2022-06-01.tar.gz",
 )
 
+# github.com/nlohmann/json - C++ JSON parsing utilities
 http_archive(
     name = "com_github_nlohmann_json",
     build_file = "@//:nlohmann_json.BUILD",
     sha256 = "d69f9deb6a75e2580465c6c4c5111b89c4dc2fa94e3a85fcd2ffcd9a143d9273",
     strip_prefix = "json-3.11.2",
     url = "https://github.com/nlohmann/json/archive/refs/tags/v3.11.2.tar.gz",
+)
+
+# work-stealing-queue -- A tool that enables threads to steal work from one another
+new_git_repository(
+    name = "com_github_taskflow_wsq",
+    build_file = "@//:wsq.BUILD",
+    commit = "378e297749374300bf9bc0229096285447993877",
+    remote = "https://github.com/taskflow/work-stealing-queue.git",
+    shallow_since = "1658336407 -0600",
+)
+
+# threadpool - a generic C++11 thread pool
+new_git_repository(
+    name = "com_github_progschj_threadpool",
+    build_file = "@//:threadpool.BUILD",
+    commit = "9a42ec1329f259a5f4881a291db1dcb8f2ad9040",
+    remote = "https://github.com/progschj/ThreadPool.git",
+    shallow_since = "1411727561 +0200",
 )
 
 # Set up protcol buffers and gRPC

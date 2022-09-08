@@ -9,6 +9,9 @@
 #include <queue>
 #include <shared_mutex>
 
+#include "wsq/wsq.hpp"
+#include "threadpool/ThreadPool.h"
+
 /*----------HELPER CLASSES------------*/
 /**
  * Concurrent queue for tasks to pull from
@@ -87,6 +90,9 @@ public:
                 task();
                 // Wait on the result of the task
                 task_result.wait(); // TODO probably want to time this out, although it should guaranteed finish
+                if (!task_result.valid()) {
+                    std::cerr << "WARNING: task result is invalid" << std::endl;
+                }
                 // Get the result of the task
                 auto resulting_patterns = task_result.get();
                 // Add them all to the pattern collector
@@ -119,28 +125,24 @@ rereuse::db::ParallelRegexClusterRepository::ParallelRegexClusterRepository(unsi
 
 std::unordered_set<std::string>
 rereuse::db::ParallelRegexClusterRepository::query(const std::shared_ptr<rereuse::query::BaseClusterQuery> &query) const {
-    // Create a queue of tasks for the thread pool to execute
-    auto task_queue = std::make_shared<ConcurrentTaskQueue>();
+
+    ThreadPool work_pool(this->processors);
+
+    std::vector<std::future<std::unordered_set<std::string>>> tasks;
     for (const auto &cluster : this->clusters) {
-        task_queue->push(query, cluster);
+        // TODO this actually uses a deprecated tool :(
+        auto task_future = work_pool.enqueue([&cluster, &query] {
+            return query->query(cluster, nullptr);
+        });
+        tasks.push_back(std::move(task_future));
     }
 
-    // Make a pattern collector to collect everything
-    auto pattern_collector = std::make_shared<PatternCollector>();
-
-    // Make a collection of workers for as many processors as we have
-    std::vector<TaskWorker> workers;
-    workers.reserve(this->processors); // Reserve all the space we will need
-    for (int i = 0; i < this->processors; i++) {
-        // Start the task workers
-        workers.emplace_back(task_queue, pattern_collector);
-    }
-
-    // Join all the workers in the worker pool
-    for (auto &worker : workers) {
-        worker.join();
+    std::unordered_set<std::string> results;
+    for (auto &task : tasks) {
+        auto task_results = task.get();
+        std::move(task_results.begin(), task_results.end(), std::inserter(results, results.begin()));
     }
 
     // Return all the patterns
-    return pattern_collector->patterns();
+    return results;
 }

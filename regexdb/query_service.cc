@@ -8,8 +8,7 @@
 
 regextools::QueryServiceImpl::QueryServiceImpl(unsigned int workers, const std::string &path) {
     auto clusters = rereuse::db::read_semantic_clusters(path);
-    // repo = std::make_unique<rereuse::db::ParallelRegexClusterRepository>(workers);
-    repo = std::make_unique<rereuse::db::RegexClusterRepository>();
+    repo = std::make_unique<rereuse::db::ParallelRegexClusterRepository>(workers);
     for (auto &cluster : clusters) {
         repo->add_cluster(std::move(cluster));
     }

@@ -31,6 +31,8 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_nlohmann_json//:json",
+        "@com_github_progschj_threadpool//:threadpool",
+        "@com_github_taskflow_wsq//:work_stealing_queue",
         "@com_googlesource_code_re2//:re2",
     ],
 )
