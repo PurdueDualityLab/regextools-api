@@ -12,6 +12,7 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//proto:query_service_go_proto",
+        "@com_github_gin_contrib_cors//:cors",
         "@com_github_gin_gonic_gin//:gin",
         "@org_golang_google_grpc//:go_default_library",
         "@org_golang_google_grpc//credentials/insecure",
