@@ -4,14 +4,21 @@
 
 #include "query_service.h"
 
+#include "spdlog/spdlog.h"
 #include "librereuse/db/pattern_reader.h"
 
 regextools::QueryServiceImpl::QueryServiceImpl(unsigned int workers, const std::string &path) {
     auto clusters = rereuse::db::read_semantic_clusters(path);
     repo = std::make_unique<rereuse::db::ParallelRegexClusterRepository>(workers);
+    spdlog::debug("QueryService: read {} semantic clusters", clusters.size());
+    unsigned long cluster_count = 0;
     for (auto &cluster : clusters) {
-        repo->add_cluster(std::move(cluster));
+        if (repo->add_cluster(std::move(cluster))) {
+            cluster_count++;
+        }
     }
+
+    spdlog::info("QueryService: Loaded {} clusters", cluster_count);
 }
 
 
@@ -29,6 +36,6 @@ grpc::Status regextools::QueryServiceImpl::ExecQuery(::grpc::ServerContext *cont
 
     response->set_total(results.size());
 
-    std::cout << "Handled instance. Got " << results.size() << " results" << std::endl;
+    spdlog::info("Handled query. Got {} results", results.size());
     return grpc::Status::OK;
 }

@@ -8,8 +8,8 @@
 #include <future>
 #include <queue>
 #include <shared_mutex>
+#include <spdlog/spdlog.h>
 
-#include "wsq/wsq.hpp"
 #include "threadpool/ThreadPool.h"
 
 /*----------HELPER CLASSES------------*/
@@ -91,7 +91,7 @@ public:
                 // Wait on the result of the task
                 task_result.wait(); // TODO probably want to time this out, although it should guaranteed finish
                 if (!task_result.valid()) {
-                    std::cerr << "WARNING: task result is invalid" << std::endl;
+                    spdlog::warn("TaskWorker::TaskWorker: task result is invalid");
                 }
                 // Get the result of the task
                 auto resulting_patterns = task_result.get();

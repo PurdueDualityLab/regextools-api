@@ -7,13 +7,16 @@
 #include <fstream>
 
 #include <nlohmann/json.hpp>
+#include "spdlog/spdlog.h"
 
 using namespace nlohmann;
 
 std::vector<std::string> rereuse::db::read_patterns(std::istream &input_stream) {
     std::vector<std::string> patterns;
     std::string line;
+    unsigned long line_no = 0;
     while (std::getline(input_stream, line)) {
+        line_no++;
         try {
             auto line_obj = json::parse(line);
             auto pattern = line_obj["pattern"];
@@ -21,6 +24,7 @@ std::vector<std::string> rereuse::db::read_patterns(std::istream &input_stream) 
             patterns.push_back(std::move(pattern));
         } catch (json::parse_error &err) {
             // Just keep going
+            spdlog::debug("pattern_reader:read_patterns: Failed to parse line {}", line_no);
             continue;
         }
     }
@@ -78,7 +82,8 @@ std::vector<std::unique_ptr<rereuse::db::Cluster>> rereuse::db::read_semantic_cl
         seed_file >> cluster_array;
         seed_file.close();
     } else {
-        return {};
+        spdlog::error("pattern_readers:read_semantic_clusters: could not open cluster file");
+        throw std::runtime_error("Could not open semantic cluster file");
     }
 
     std::vector<std::unique_ptr<rereuse::db::Cluster>> clusters;
