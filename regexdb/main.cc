@@ -8,9 +8,6 @@
 #include "query_service.h"
 
 int main(int argc, const char **argv) {
-
-    // std::string fallback = "/home/charlie/Programming/redb/db-20000-clusters.json";
-
     const char *clusterFile = getenv("REGEXDB_CLUSTER_FILE");
     if (!clusterFile) {
         throw std::runtime_error("REGEXDB_CLUSTER_FILE environment variable must be set");

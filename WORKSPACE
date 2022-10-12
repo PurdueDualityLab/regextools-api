@@ -58,7 +58,7 @@ http_archive(
 # github.com/nlohmann/json - C++ JSON parsing utilities
 http_archive(
     name = "com_github_nlohmann_json",
-    build_file = "@//:nlohmann_json.BUILD",
+    build_file = "@//:third_party/nlohmann_json.BUILD",
     sha256 = "d69f9deb6a75e2580465c6c4c5111b89c4dc2fa94e3a85fcd2ffcd9a143d9273",
     strip_prefix = "json-3.11.2",
     url = "https://github.com/nlohmann/json/archive/refs/tags/v3.11.2.tar.gz",
@@ -67,7 +67,7 @@ http_archive(
 # work-stealing-queue -- A tool that enables threads to steal work from one another
 new_git_repository(
     name = "com_github_taskflow_wsq",
-    build_file = "@//:wsq.BUILD",
+    build_file = "@//:third_party/wsq.BUILD",
     commit = "378e297749374300bf9bc0229096285447993877",
     remote = "https://github.com/taskflow/work-stealing-queue.git",
     shallow_since = "1658336407 -0600",
@@ -76,10 +76,26 @@ new_git_repository(
 # threadpool - a generic C++11 thread pool
 new_git_repository(
     name = "com_github_progschj_threadpool",
-    build_file = "@//:threadpool.BUILD",
+    build_file = "@//:third_party/threadpool.BUILD",
     commit = "9a42ec1329f259a5f4881a291db1dcb8f2ad9040",
     remote = "https://github.com/progschj/ThreadPool.git",
     shallow_since = "1411727561 +0200",
+)
+
+http_archive(
+    name = "com_github_fmtlib_fmt",
+    build_file = "@//:third_party/fmtlib.BUILD",
+    sha256 = "cceb4cb9366e18a5742128cb3524ce5f50e88b476f1e54737a47ffdf4df4c996",
+    strip_prefix = "fmt-9.1.0",
+    url = "https://github.com/fmtlib/fmt/releases/download/9.1.0/fmt-9.1.0.zip",
+)
+
+http_archive(
+    name = "com_gabime_spdlog",
+    build_file = "@//:third_party/spdlog.BUILD",
+    sha256 = "697f91700237dbae2326b90469be32b876b2b44888302afbc7aceb68bcfe8224",
+    strip_prefix = "spdlog-1.10.0",
+    url = "https://github.com/gabime/spdlog/archive/refs/tags/v1.10.0.tar.gz",
 )
 
 # Set up protcol buffers and gRPC

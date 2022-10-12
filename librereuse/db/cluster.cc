@@ -4,6 +4,7 @@
 #include "cluster.h"
 
 #include <iostream>
+#include "spdlog/spdlog.h"
 
 rereuse::db::Cluster::Cluster(const std::unordered_set<std::string> &patterns)
         : size(0),
@@ -17,7 +18,7 @@ rereuse::db::Cluster::Cluster(const std::unordered_set<std::string> &patterns)
         std::string error_msg;
         int ret = this->regex_set->Add(pattern, &error_msg);
         if (ret < 0) {
-            // std::cerr << "Error while parsing regex /" << pattern << "/: " << error_msg << std::endl;
+            spdlog::error("Cluster::Cluster: Error while parsing regex /{}/: {}", pattern, error_msg);
         } else {
             this->size++; // A new regex was added, so increment the size
             this->patterns.push_back(pattern);
@@ -43,7 +44,7 @@ bool rereuse::db::Cluster::add_pattern(const std::string &pattern) {
         this->patterns.push_back(pattern);
         return true;
     } else {
-        // TODO Maybe do something about that error msg...
+        spdlog::error("Cluster:add_pattern: Could not add regex /{}/: {}", pattern, error_msg);
         return false;
     }
 }

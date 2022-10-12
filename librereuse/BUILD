@@ -30,6 +30,7 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
+        "@com_gabime_spdlog//:spdlog",
         "@com_github_nlohmann_json//:json",
         "@com_github_progschj_threadpool//:threadpool",
         "@com_github_taskflow_wsq//:work_stealing_queue",

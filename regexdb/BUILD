@@ -11,6 +11,7 @@ cc_binary(
     deps = [
         "//librereuse:rereuse",
         "//proto:cpp_query_service_proto",
+        "@com_gabime_spdlog//:spdlog",
     ],
 )
 
