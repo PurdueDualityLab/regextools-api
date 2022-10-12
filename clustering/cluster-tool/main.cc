@@ -4,8 +4,6 @@
 
 #include <unordered_set>
 #include <string>
-#include <memory>
-#include <sstream>
 #include <re2/re2.h>
 #include <egret.h>
 #include <iostream>
@@ -13,6 +11,7 @@
 #include <nlohmann/json.hpp>
 #include <condition_variable>
 #include <thread>
+#include <threadpool/ThreadPool.h>
 #include "librereuse/db/pattern_reader.h"
 
 struct regex_exception : public std::exception {
@@ -29,30 +28,6 @@ struct regex_exception : public std::exception {
 private:
     std::string msg;
 };
-
-std::unique_ptr<re2::RE2> timed_regex_build(const std::string &pattern) {
-    using namespace std::chrono_literals;
-
-    std::mutex mut;
-    std::condition_variable cv;
-    std::unique_ptr<re2::RE2> resulting_regex;
-
-    std::thread th([&cv, &resulting_regex, &pattern] {
-        resulting_regex = std::make_unique<re2::RE2>(pattern);
-        cv.notify_one();
-    });
-
-    th.detach();
-
-    {
-        std::unique_lock lock(mut);
-        if (cv.wait_for(lock, 3s) == std::cv_status::timeout) {
-            throw std::runtime_error("building regex timed out");
-        }
-    }
-
-    return resulting_regex;
-}
 
 struct RegexInfo {
 
@@ -117,7 +92,7 @@ struct RegexInfo {
             }
         }
 
-        return (tp + tn) / static_cast<double>(this->positive.size() + this->negative.size() + other.positive.size() + other.negative.size());
+        return static_cast<double>(tp + tn) / static_cast<double>(this->positive.size() + this->negative.size() + other.positive.size() + other.negative.size());
     }
 
     std::unique_ptr<re2::RE2> regex;
@@ -125,9 +100,8 @@ struct RegexInfo {
     std::unordered_set<std::string> negative;
 };
 
-std::vector<RegexInfo> build_regex_infos(std::vector<std::string> regex_patterns) {
+std::vector<RegexInfo> build_regex_infos(std::vector<std::string> regex_patterns, std::atomic_long &built) {
     std::vector<RegexInfo> regex_infos;
-    unsigned long built = 1;
     for (auto &pattern : regex_patterns) {
         std::cout << "Building regex #" << built++ << " /" << pattern << "/..." << std::endl;
         try {
@@ -142,7 +116,48 @@ std::vector<RegexInfo> build_regex_infos(std::vector<std::string> regex_patterns
     return regex_infos;
 }
 
+std::vector<RegexInfo> build_regex_infos_threaded(std::vector<std::string> regex_patterns, unsigned int workers) {
+    ThreadPool work_pool(workers);
+
+    auto chunk_size = regex_patterns.size() / workers;
+    std::vector<std::vector<std::string>> chunks;
+    auto start_chunk_it = regex_patterns.begin();
+    while (start_chunk_it <= regex_patterns.end()) {
+        std::vector<std::string> chunk;
+        auto end_chunk_it = std::next(start_chunk_it, chunk_size);
+        std::move(start_chunk_it, end_chunk_it, std::back_inserter(chunk));
+        chunks.push_back(std::move(chunk));
+        start_chunk_it = end_chunk_it + 1;
+    }
+
+    std::vector<std::future<std::vector<RegexInfo>>> tasks;
+    std::atomic_long built(0);
+    for (auto &orig_chunk : chunks) {
+        auto task = work_pool.enqueue([chunk = std::move(orig_chunk), &built]() {
+            return build_regex_infos(std::move(chunk), built);
+        });
+        tasks.push_back(std::move(task));
+    }
+
+    // We have each task
+    std::vector<RegexInfo> all_infos;
+    for (auto &task : tasks) {
+        auto infos = task.get();
+        std::move(infos.begin(), infos.end(), std::back_inserter(all_infos));
+    }
+
+    return all_infos;
+}
+
 std::vector<RegexInfo> cluster(RegexInfo seed, std::vector<RegexInfo> &regexes, int max_cluster_size) {
+    unsigned long id = 0;
+    for (const auto &regex : regexes) {
+        if (!regex.regex) {
+            std::cerr << "WARNING: Regex at idx " << id << " has a null regex" << std::endl;
+        }
+        id++;
+    }
+
     std::vector<std::pair<typename std::vector<RegexInfo>::size_type, double>> scores;
 
     std::vector<RegexInfo>::size_type idx = 0;
@@ -159,19 +174,19 @@ std::vector<RegexInfo> cluster(RegexInfo seed, std::vector<RegexInfo> &regexes, 
     });
 
     std::vector<RegexInfo> new_cluster;
-    std::vector<unsigned long> idx_to_remove;
     new_cluster.push_back(std::move(seed));
     for (int i = 0; i < max_cluster_size; i++) {
-        auto idx = scores[i].first;
+        idx = scores[i].first;
         // Steal that particular regex info
         new_cluster.push_back(std::move(regexes[idx]));
-        // Keep track of which idxes to erase in reverse order
-        idx_to_remove.insert(idx_to_remove.begin(), idx);
     }
 
-    // Erase all the references
-    for (const auto &removeIdx : idx_to_remove) {
-        regexes.erase(regexes.begin() + removeIdx);
+    for (auto it = regexes.begin(); it != regexes.end();) {
+        if (!it->regex) {
+            it = regexes.erase(it);
+        } else {
+            ++it;
+        }
     }
 
     return new_cluster;
@@ -189,7 +204,7 @@ RegexInfo randomly_remove_info(std::vector<RegexInfo> &regexes) {
     std::size_t idx = distribution(generator);
 
     auto info = std::move(regexes[idx]);
-    regexes.erase(regexes.begin() + idx);
+    regexes.erase(std::next(regexes.begin(), idx));
 
     return info;
 }
@@ -200,6 +215,8 @@ std::vector<std::vector<RegexInfo>> create_clusters(std::vector<RegexInfo> regex
     while (regexes.size() > max_cluster_size) {
         // Randomly remove a regex
         auto seed = randomly_remove_info(regexes);
+
+        std::cout << "Starting to cluster with /" << seed.regex->pattern() << "/..." << std::endl;
 
         // Create a cluster with it
         auto new_cluster = cluster(std::move(seed), regexes, max_cluster_size);
@@ -217,17 +234,19 @@ int main(int argc, const char **argv) {
     }
 
     std::string path(argv[1]);
-    std::vector<RegexInfo> regexInfos;
+    std::vector<RegexInfo> regex_infos;
+    std::atomic_long built(0);
     {
         auto patterns = rereuse::db::read_patterns_from_path(path);
-        regexInfos = build_regex_infos(std::move(patterns));
+        regex_infos = build_regex_infos(std::move(patterns), built);
+        // regex_infos = build_regex_infos_threaded(std::move(patterns), std::thread::hardware_concurrency());
     }
 
     std::cout << "------------\n";
-    std::cout << "Clustering " << regexInfos.size() << " regexes\n";
+    std::cout << "Clustering " << regex_infos.size() << " regexes\n";
     std::cout << "-------------" << std::endl;
 
-    auto clusters = create_clusters(std::move(regexInfos), 100);
+    auto clusters = create_clusters(std::move(regex_infos), 100);
 
     nlohmann::json clusters_obj;
     for (const auto &cluster : clusters) {
