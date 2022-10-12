@@ -13,6 +13,7 @@
 #include <thread>
 #include <fstream>
 #include <threadpool/ThreadPool.h>
+#include <spdlog/spdlog.h>
 #include "librereuse/db/pattern_reader.h"
 
 struct regex_exception : public std::exception {
@@ -104,13 +105,13 @@ struct RegexInfo {
 std::vector<RegexInfo> build_regex_infos(std::vector<std::string> regex_patterns, std::atomic_long &built) {
     std::vector<RegexInfo> regex_infos;
     for (auto &pattern : regex_patterns) {
-        std::cout << "Building regex #" << built++ << " /" << pattern << "/..." << std::endl;
+        spdlog::info("build_regex_infos: Building regex #{} /{}/...", built++, pattern);
         try {
             RegexInfo newInfo(std::move(pattern));
             regex_infos.push_back(std::move(newInfo));
         } catch (regex_exception &exe) {
             // skip this one regex
-            std::cerr << "Skipping regex /" << pattern << "/: " << exe.what() << std::endl;
+            spdlog::warn("build_regex_infos: Skipping regex /{}/: {}", pattern, exe.what());
         }
     }
 
@@ -154,7 +155,7 @@ std::vector<RegexInfo> cluster(RegexInfo seed, std::vector<RegexInfo> &regexes, 
     unsigned long id = 0;
     for (const auto &regex : regexes) {
         if (!regex.regex) {
-            std::cerr << "WARNING: Regex at idx " << id << " has a null regex" << std::endl;
+            spdlog::warn("cluster: regex at id {} has a null regex", id);
         }
         id++;
     }
@@ -217,7 +218,7 @@ std::vector<std::vector<RegexInfo>> create_clusters(std::vector<RegexInfo> regex
         // Randomly remove a regex
         auto seed = randomly_remove_info(regexes);
 
-        std::cout << "Starting to cluster with /" << seed.regex->pattern() << "/..." << std::endl;
+        spdlog::info("Starting to cluster with /{}/...", seed.regex->pattern());
 
         // Create a cluster with it
         auto new_cluster = cluster(std::move(seed), regexes, max_cluster_size);
