@@ -218,10 +218,11 @@ std::vector<std::vector<RegexInfo>> create_clusters(std::vector<RegexInfo> regex
         // Randomly remove a regex
         auto seed = randomly_remove_info(regexes);
 
-        spdlog::info("Starting to cluster with /{}/...", seed.regex->pattern());
+        spdlog::info("Starting to cluster with /{}/.  {} regexes remaining to be clustered...", seed.regex->pattern(), regexes.size());
 
         // Create a cluster with it
         auto new_cluster = cluster(std::move(seed), regexes, max_cluster_size);
+        spdlog::info("Created cluster of size {}", new_cluster.size());
         clusters.push_back(std::move(new_cluster));
     }
 
