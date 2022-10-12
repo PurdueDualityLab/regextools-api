@@ -3,6 +3,7 @@ cc_binary(
     srcs = ["main.cc"],
     deps = [
         "//librereuse:rereuse",
+        "@com_gabime_spdlog//:spdlog",
         "@com_github_dualitylab_egret//:egret",
         "@com_github_nlohmann_json//:json",
         "@com_github_progschj_threadpool//:threadpool",

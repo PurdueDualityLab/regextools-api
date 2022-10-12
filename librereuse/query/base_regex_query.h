@@ -6,7 +6,7 @@
 #define _BASEREGEXQUERY_H
 
 #include <memory>
-#include <re2/re2.h>
+#include "re2/re2.h"
 #include "abstract_score.h"
 
 namespace rereuse::query {
