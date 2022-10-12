@@ -11,6 +11,7 @@
 #include <nlohmann/json.hpp>
 #include <condition_variable>
 #include <thread>
+#include <fstream>
 #include <threadpool/ThreadPool.h>
 #include "librereuse/db/pattern_reader.h"
 
@@ -228,12 +229,13 @@ std::vector<std::vector<RegexInfo>> create_clusters(std::vector<RegexInfo> regex
 
 int main(int argc, const char **argv) {
     // Read regexes
-    if (argc < 2) {
-        std::cerr << "usage: clustering <file to cluster>" << std::endl;
+    if (argc < 3) {
+        std::cerr << "usage: cluster-tool <path to cluster> <path to write clusters to>" << std::endl;
         return 1;
     }
 
     std::string path(argv[1]);
+    std::string output_path(argv[2]);
     std::vector<RegexInfo> regex_infos;
     std::atomic_long built(0);
     {
@@ -258,7 +260,8 @@ int main(int argc, const char **argv) {
         clusters_obj.push_back(cluster_obj);
     }
 
-    std::cout << clusters_obj.dump(2, ' ') << std::endl;
+    std::ofstream output(output_path);
+    output << clusters_obj << std::endl;
 
     return 0;
 }
