@@ -17,7 +17,7 @@ namespace rereuse::db {
         ParallelRegexClusterRepository(unsigned int processors, int maxClusterSize, const std::string &path);
 
         std::unordered_set<std::string>
-        query(const std::shared_ptr<rereuse::query::BaseClusterQuery> &query) const override;
+        query(const std::unique_ptr<rereuse::query::BaseClusterQuery> &query) const override;
 
     private:
         unsigned int processors;

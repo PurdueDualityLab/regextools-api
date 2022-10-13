@@ -27,7 +27,7 @@ grpc::Status regextools::QueryServiceImpl::ExecQuery(::grpc::ServerContext *cont
 
     std::unordered_set<std::string> positive_examples(request->positive().begin(), request->positive().end());
     std::unordered_set<std::string> negative_examples(request->negative().begin(), request->negative().end());
-    std::shared_ptr<rereuse::query::BaseClusterQuery> query = std::make_shared<rereuse::query::ClusterMatchQuery>(positive_examples, negative_examples);
+    std::unique_ptr<rereuse::query::BaseClusterQuery> query = std::make_unique<rereuse::query::ClusterMatchQuery>(positive_examples, negative_examples);
 
     auto results = this->repo->query(query);
     for (auto &result : results) {

@@ -6,6 +6,7 @@
 #include <random>
 #include <vector>
 #include <nlohmann/json.hpp>
+#include <spdlog/spdlog.h>
 #include "regex_cluster_repository.h"
 #include "../query/match_query.h"
 
@@ -45,14 +46,14 @@ rereuse::db::RegexClusterRepository::RegexClusterRepository(int maxClusterSize,
         }
     }
 
-    // Compile all of the clusters
+    // Compile all the clusters
     for (auto it = clusters.begin(); it != clusters.end();) {
         auto cluster = *it;
         if (cluster->compile()) {
             ++it;
         } else {
             // Failed to compile, so remove it from the list
-            std::cerr << "Failed to compile cluster" << std::endl;
+            spdlog::error("RegexClusterRepository:Ctor: Failed to compile cluster");
             it = this->clusters.erase(it);
         }
     }
@@ -133,11 +134,12 @@ int rereuse::db::RegexClusterRepository::pattern_count() const {
 }
 
 std::unordered_set<std::string>
-rereuse::db::RegexClusterRepository::query(const std::shared_ptr<rereuse::query::BaseClusterQuery> &query,
-                                           int *skipped_clusters,
+rereuse::db::RegexClusterRepository::query(const std::unique_ptr<rereuse::query::BaseClusterQuery> &query,
+                                           unsigned long *skipped_clusters,
                                            std::vector<std::chrono::microseconds> *test_times,
                                            std::vector<std::chrono::microseconds> *query_times) const {
     std::unordered_set<std::string> combined_results;
+    unsigned long cluster_id = 0;
     for (const auto &cluster : this->clusters) {
         std::chrono::microseconds test_duration, query_duration;
         bool query_happened = false;
@@ -145,12 +147,16 @@ rereuse::db::RegexClusterRepository::query(const std::shared_ptr<rereuse::query:
             auto results = query->query(cluster, &query_duration);
             query_happened = true;
             // Move all the results to combined results
-            std::move(results.begin(),  results.end(), std::inserter(combined_results, combined_results.begin()));
+            std::set_union(results.cbegin(), results.cend(), combined_results.cbegin(), combined_results.cend(),
+                           std::inserter(combined_results, combined_results.begin()));
         } else {
+            spdlog::debug("Skipped cluster #{}", cluster_id);
             if (skipped_clusters) {
                 *skipped_clusters += 1;
             }
         }
+
+        cluster_id++;
 
         if (test_times) {
             test_times->push_back(test_duration);
@@ -180,4 +186,18 @@ void rereuse::db::RegexClusterRepository::shuffle_clusters() {
 
 const std::vector<std::shared_ptr<rereuse::db::Cluster>> &rereuse::db::RegexClusterRepository::get_clusters() {
     return this->clusters;
+}
+
+std::optional<unsigned long> rereuse::db::RegexClusterRepository::get_regex_cluster_idx(const std::string &pattern) const {
+
+    unsigned long idx = 0;
+    for (const auto &cluster : this->clusters) {
+        if (std::count(cluster->get_patterns().begin(), cluster->get_patterns().end(), pattern) > 0) {
+            return {idx};
+        } else {
+            idx++;
+        }
+    }
+
+    return {};
 }

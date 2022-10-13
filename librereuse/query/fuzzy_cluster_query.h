@@ -5,7 +5,6 @@
 #ifndef _FUZZYCLUSTERQUERY_H
 #define _FUZZYCLUSTERQUERY_H
 
-// #include "base_cluster_query.h"
 #include "librereuse/query/base_cluster_query.h"
 
 namespace rereuse::query {

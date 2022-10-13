@@ -32,7 +32,7 @@ rereuse::db::RegexRepository::RegexRepository(const std::string &path) {
         for (const auto &pattern : unique_patterns) {
             RE2::Options re2_opts;
             re2_opts.set_log_errors(false);
-            auto regex = std::make_shared<RE2>(pattern, re2_opts);
+            auto regex = std::make_unique<RE2>(pattern, re2_opts);
             if (regex->ok()) {
                 this->regexes.push_back(std::move(regex));
             }
@@ -42,9 +42,20 @@ rereuse::db::RegexRepository::RegexRepository(const std::string &path) {
     }
 }
 
-std::unordered_set<std::string>
-rereuse::db::RegexRepository::query(const std::shared_ptr<rereuse::query::BaseRegexQuery> &query) {
+rereuse::db::RegexRepository::RegexRepository(const std::vector<std::string>& patterns) {
+    for (auto &pattern : patterns) {
+        RE2::Options re2_opts;
+        re2_opts.set_log_errors(false);
+        auto regex = std::make_unique<RE2>(pattern, re2_opts);
+        if (regex->ok()) {
+            this->regexes.push_back(std::move(regex));
+        }
+    }
+}
 
+
+std::unordered_set<std::string>
+rereuse::db::RegexRepository::query(const std::unique_ptr<query::BaseRegexQuery> &query) {
     std::unordered_set<std::string> matching_patterns;
     for (const auto &regex : this->regexes) {
         if (query->test(*regex)) {

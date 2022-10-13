@@ -124,7 +124,7 @@ rereuse::db::ParallelRegexClusterRepository::ParallelRegexClusterRepository(unsi
 }
 
 std::unordered_set<std::string>
-rereuse::db::ParallelRegexClusterRepository::query(const std::shared_ptr<rereuse::query::BaseClusterQuery> &query) const {
+rereuse::db::ParallelRegexClusterRepository::query(const std::unique_ptr<rereuse::query::BaseClusterQuery> &query) const {
 
     ThreadPool work_pool(this->processors);
 

@@ -98,6 +98,24 @@ http_archive(
     url = "https://github.com/gabime/spdlog/archive/refs/tags/v1.10.0.tar.gz",
 )
 
+# egret - regex string generation
+new_git_repository(
+    name = "com_github_dualitylab_egret",
+    build_file = "@//:third_party/egret.BUILD",
+    commit = "e7dd6ccc6e833cb888c1ed258b2c0a32337a7458",
+    remote = "git@github.com:PurdueDualityLab/egret.git",
+    shallow_since = "1649083497 -0400",
+)
+
+# Google test
+http_archive(
+    name = "com_google_googletest",
+    sha256 = "81964fe578e9bd7c94dfdb09c8e4d6e6759e19967e397dbea48d1c10e45d0df2",
+    strip_prefix = "googletest-release-1.12.1",
+    urls = ["https://github.com/google/googletest/archive/refs/tags/release-1.12.1.tar.gz"],
+)
+
+###
 # Set up protcol buffers and gRPC
 http_archive(
     name = "rules_proto_grpc",

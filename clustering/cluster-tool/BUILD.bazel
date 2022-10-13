@@ -1,0 +1,12 @@
+cc_binary(
+    name = "cluster-tool",
+    srcs = ["main.cc"],
+    deps = [
+        "//librereuse:rereuse",
+        "@com_gabime_spdlog//:spdlog",
+        "@com_github_dualitylab_egret//:egret",
+        "@com_github_nlohmann_json//:json",
+        "@com_github_progschj_threadpool//:threadpool",
+        "@com_googlesource_code_re2//:re2",
+    ],
+)

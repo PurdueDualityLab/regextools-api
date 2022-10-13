@@ -53,5 +53,3 @@ const std::unordered_set<std::string> &rereuse::query::MatchQuery::get_positive(
 const std::unordered_set<std::string> &rereuse::query::MatchQuery::get_negative() const {
     return negative;
 }
-
-

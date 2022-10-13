@@ -1,0 +1,14 @@
+cc_binary(
+    name = "filter",
+    srcs = [
+        "arg_parser.cc",
+        "arg_parser.h",
+        "main.cc",
+    ],
+    deps = [
+        "//librereuse:rereuse",
+        "@com_github_dualitylab_egret//:egret",
+        "@com_github_nlohmann_json//:json",
+        "@com_googlesource_code_re2//:re2",
+    ],
+)
