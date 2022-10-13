@@ -1,0 +1,17 @@
+cc_test(
+    name = "cluster-match-query-test",
+    srcs = ["cluster_match_query_test.cc"],
+    deps = [
+        "//librereuse:rereuse",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "cluster-match-query-live-test",
+    srcs = ["cluster_match_query_live_test.cc"],
+    deps = [
+        "//librereuse:rereuse",
+        "@com_google_googletest//:gtest_main",
+    ],
+)

@@ -4,8 +4,13 @@ cc_binary(
         "arg_parser.cc",
         "arg_parser.h",
         "main.cc",
+        "query_report.cc",
+        "query_report.h",
         "report.cc",
         "report.h",
     ],
-    deps = [],
+    deps = [
+        "//librereuse:rereuse",
+        "@com_gabime_spdlog//:spdlog",
+    ],
 )

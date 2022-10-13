@@ -6,6 +6,7 @@
 
 #include <utility>
 #include <numeric>
+#include <set>
 
 rereuse::query::ClusterMatchQuery::ClusterMatchQuery(std::unordered_set<std::string> positive,
                                                      std::unordered_set<std::string> negative)
@@ -18,7 +19,8 @@ rereuse::query::ClusterMatchQuery::query(const std::shared_ptr<rereuse::db::Clus
 
     auto &set = cluster->get_regex_set();
 
-    std::unordered_set<int> matched;
+    std::set<int> matched;
+    // TODO: there is hopefully room for optimization here
 
     auto start = std::chrono::high_resolution_clock::now();
     for (const auto &pos : this->positive) {
@@ -28,12 +30,13 @@ rereuse::query::ClusterMatchQuery::query(const std::shared_ptr<rereuse::db::Clus
                 // If matched is empty, then push all of these values in
                 std::copy(positive_indices.cbegin(), positive_indices.cend(), std::inserter(matched, matched.begin()));
             } else {
+                std::sort(positive_indices.begin(), positive_indices.end());
                 // Find the intersection between these indices and the already matched ones
-                std::unordered_set<int> intersection;
-                std::set_intersection(matched.cbegin(),  matched.cend(), positive_indices.cbegin(),  positive_indices.cend(), std::inserter(intersection, intersection.begin()));
+                std::set<int> intersection;
+                std::set_intersection(matched.cbegin(), matched.cend(), positive_indices.cbegin(), positive_indices.cend(), std::inserter(intersection, intersection.begin()));
 
                 // Set the intersection to equal
-                matched = intersection;
+                std::swap(matched, intersection);
             }
         } else {
             // Nothing matched, so return empty set
@@ -52,13 +55,11 @@ rereuse::query::ClusterMatchQuery::query(const std::shared_ptr<rereuse::db::Clus
         std::vector<int> positive_indices;
         if (set.Match(neg, &positive_indices)) {
             // Something matched, so indices must be removed from matched
-            for (auto matched_index = matched.begin(); matched_index != matched.end();) {
-                if (std::count(positive_indices.cbegin(), positive_indices.cend(), *matched_index)) {
-                    matched_index = matched.erase(matched_index);
-                } else {
-                    matched_index++;
-                }
-            }
+            std::sort(positive_indices.begin(), positive_indices.end());
+            std::set<int> difference;
+            std::set_difference(matched.cbegin(), matched.cend(), positive_indices.cbegin(), positive_indices.cend(),
+                                std::inserter(difference, difference.begin()));
+            std::swap(matched, difference);
         }
     }
     auto end = std::chrono::high_resolution_clock::now();
@@ -107,6 +108,9 @@ bool rereuse::query::ClusterMatchQuery::test(const std::shared_ptr<rereuse::db::
                 }
                 return false;
             }
+        } else {
+            // Reset this after each invocation
+            hits.clear();
         }
     }
     auto end = std::chrono::high_resolution_clock::now();
