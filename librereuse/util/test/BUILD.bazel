@@ -1,0 +1,8 @@
+cc_test(
+    name = "bitmap-test",
+    srcs = ["bitmap_test.cc"],
+    deps = [
+        "//librereuse:rereuse",
+        "@com_google_googletest//:gtest_main",
+    ],
+)

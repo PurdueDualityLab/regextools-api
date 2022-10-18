@@ -3,6 +3,8 @@
 //
 
 #include "cluster_match_query.h"
+#include "librereuse/util/bitmap.h"
+#include "librereuse/util/stats.h"
 
 #include <utility>
 #include <numeric>
@@ -15,29 +17,23 @@ rereuse::query::ClusterMatchQuery::ClusterMatchQuery(std::unordered_set<std::str
 }
 
 std::unordered_set<std::string>
-rereuse::query::ClusterMatchQuery::query(const std::shared_ptr<rereuse::db::Cluster> &cluster, std::chrono::microseconds *duration) {
+rereuse::query::ClusterMatchQuery::query(const std::shared_ptr<rereuse::db::Cluster> &cluster, std::chrono::microseconds *duration, double *average_match_vector_length) {
 
     auto &set = cluster->get_regex_set();
 
-    std::set<int> matched;
+    std::vector<unsigned long> vector_lengths;
+
+    rereuse::util::Bitmap matching_regexes(cluster->get_size(), true /* fill with 1s */);
     // TODO: there is hopefully room for optimization here
 
     auto start = std::chrono::high_resolution_clock::now();
     for (const auto &pos : this->positive) {
         std::vector<int> positive_indices;
         if (set.Match(pos, &positive_indices)) {
-            if (matched.empty()) {
-                // If matched is empty, then push all of these values in
-                std::copy(positive_indices.cbegin(), positive_indices.cend(), std::inserter(matched, matched.begin()));
-            } else {
-                std::sort(positive_indices.begin(), positive_indices.end());
-                // Find the intersection between these indices and the already matched ones
-                std::set<int> intersection;
-                std::set_intersection(matched.cbegin(), matched.cend(), positive_indices.cbegin(), positive_indices.cend(), std::inserter(intersection, intersection.begin()));
-
-                // Set the intersection to equal
-                std::swap(matched, intersection);
-            }
+            vector_lengths.push_back(positive_indices.size());
+            rereuse::util::Bitmap hits(matching_regexes.size());
+            std::for_each(positive_indices.cbegin(), positive_indices.cend(), [&hits](const int &idx) { hits.set(idx, true); });
+            matching_regexes &= hits;
         } else {
             // Nothing matched, so return empty set
             auto end = std::chrono::high_resolution_clock::now();
@@ -55,24 +51,29 @@ rereuse::query::ClusterMatchQuery::query(const std::shared_ptr<rereuse::db::Clus
         std::vector<int> positive_indices;
         if (set.Match(neg, &positive_indices)) {
             // Something matched, so indices must be removed from matched
-            std::sort(positive_indices.begin(), positive_indices.end());
-            std::set<int> difference;
-            std::set_difference(matched.cbegin(), matched.cend(), positive_indices.cbegin(), positive_indices.cend(),
-                                std::inserter(difference, difference.begin()));
-            std::swap(matched, difference);
+            rereuse::util::Bitmap hits(matching_regexes.size(), true);
+            std::for_each(positive_indices.cbegin(), positive_indices.cend(), [&hits](const int &idx) { hits.set(idx, false); });
+
+            matching_regexes &= hits;
         }
     }
     auto end = std::chrono::high_resolution_clock::now();
 
     std::unordered_set<std::string> patterns;
-    for (const auto &index : matched) {
-        // For each index, get the pattern at that index
-        patterns.insert(cluster->get_patterns().at(index));
+    auto cluster_patterns = cluster->get_patterns();
+    for (unsigned long idx = 0; idx < matching_regexes.size(); idx++) {
+        if (matching_regexes.get(idx)) {
+            patterns.insert(cluster_patterns.at(idx));
+        }
     }
 
     if (duration != nullptr) {
         // If we want to keep track of the duration, put it here
         *duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    }
+
+    if (average_match_vector_length != nullptr) {
+        *average_match_vector_length = rereuse::util::mean(vector_lengths.cbegin(), vector_lengths.cend());
     }
 
     return patterns;

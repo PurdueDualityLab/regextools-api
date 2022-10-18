@@ -36,13 +36,14 @@ namespace rereuse::db {
 
         virtual std::unordered_set<std::string>
         query(const std::unique_ptr<rereuse::query::BaseClusterQuery> &query) const {
-            return this->query(query, nullptr, nullptr, nullptr);
+            return this->query(query, nullptr, nullptr, nullptr, nullptr);
         }
 
         virtual std::unordered_set<std::string>
         query(const std::unique_ptr<rereuse::query::BaseClusterQuery> &query, unsigned long *skipped_clusters,
               std::vector<std::chrono::microseconds> *test_times,
-              std::vector<std::chrono::microseconds> *query_times) const;
+              std::vector<std::chrono::microseconds> *query_times,
+              double *average_match_vector_size) const;
 
     protected:
         int maxClusterSize;

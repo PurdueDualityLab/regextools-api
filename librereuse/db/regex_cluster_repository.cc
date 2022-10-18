@@ -9,6 +9,7 @@
 #include <spdlog/spdlog.h>
 #include "regex_cluster_repository.h"
 #include "../query/match_query.h"
+#include "librereuse/util/stats.h"
 
 using nlohmann::json;
 
@@ -137,14 +138,18 @@ std::unordered_set<std::string>
 rereuse::db::RegexClusterRepository::query(const std::unique_ptr<rereuse::query::BaseClusterQuery> &query,
                                            unsigned long *skipped_clusters,
                                            std::vector<std::chrono::microseconds> *test_times,
-                                           std::vector<std::chrono::microseconds> *query_times) const {
+                                           std::vector<std::chrono::microseconds> *query_times,
+                                           double *average_match_vector_size) const {
+    std::vector<double> average_vector_sizes;
     std::unordered_set<std::string> combined_results;
     unsigned long cluster_id = 0;
     for (const auto &cluster : this->clusters) {
         std::chrono::microseconds test_duration, query_duration;
+        double average_vec_size;
         bool query_happened = false;
         if (query->test(cluster, &test_duration)) {
-            auto results = query->query(cluster, &query_duration);
+            auto results = query->query(cluster, &query_duration, &average_vec_size);
+            average_vector_sizes.push_back(average_vec_size);
             query_happened = true;
             // Move all the results to combined results
             std::set_union(results.cbegin(), results.cend(), combined_results.cbegin(), combined_results.cend(),
@@ -165,6 +170,10 @@ rereuse::db::RegexClusterRepository::query(const std::unique_ptr<rereuse::query:
         if (query_times && query_happened) {
             query_times->push_back(query_duration);
         }
+    }
+
+    if (average_match_vector_size) {
+        *average_match_vector_size = rereuse::util::mean(average_vector_sizes.cbegin(), average_vector_sizes.cend());
     }
 
     return combined_results;

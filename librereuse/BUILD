@@ -11,6 +11,7 @@ cc_library(
         "query/fuzzy_cluster_query.cc",
         "query/match_query.cc",
         "query/miss_score.cc",
+        "util/bitmap.cc",
     ],
     hdrs = [
         "db/cluster.h",
@@ -25,6 +26,7 @@ cc_library(
         "query/fuzzy_cluster_query.h",
         "query/match_query.h",
         "query/miss_score.h",
+        "util/bitmap.h",
         "util/is_iterable.h",
         "util/stats.h",
     ],

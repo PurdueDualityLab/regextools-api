@@ -15,7 +15,7 @@ namespace rereuse::query {
         virtual ~BaseClusterQuery() = default;
 
         virtual bool test(const std::shared_ptr<rereuse::db::Cluster> &cluster, std::chrono::microseconds *duration) = 0;
-        virtual std::unordered_set<std::string> query(const std::shared_ptr<rereuse::db::Cluster> &cluster, std::chrono::microseconds *duration) = 0;
+        virtual std::unordered_set<std::string> query(const std::shared_ptr<rereuse::db::Cluster> &cluster, std::chrono::microseconds *duration, double *average_match_vector_length) = 0;
     };
 }
 
