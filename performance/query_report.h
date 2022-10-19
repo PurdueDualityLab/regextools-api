@@ -15,6 +15,7 @@ struct QueryReport {
     QueryReport()
     : skipped_clusters(0)
     , total_elapsed_time()
+    , average_vec_size(0)
     {}
 
     double average_test_time() const;
@@ -27,6 +28,7 @@ struct QueryReport {
     std::chrono::microseconds total_elapsed_time;
     std::vector<std::chrono::microseconds> test_times;
     std::vector<std::chrono::microseconds> query_times;
+    double average_vec_size;
 };
 
 #endif //REGEXTOOLS_QUERY_REPORT_H

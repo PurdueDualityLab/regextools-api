@@ -68,7 +68,7 @@ QueryReport measure_no_clusters(const std::vector<std::string> &patterns, const 
 QueryReport measure_clusters(const rereuse::db::RegexClusterRepository &repo, const std::unique_ptr<rereuse::query::BaseClusterQuery> &query) {
     QueryReport report;
     auto start = std::chrono::high_resolution_clock::now();
-    auto results = repo.query(query, &report.skipped_clusters, &report.test_times, &report.query_times);
+    auto results = repo.query(query, &report.skipped_clusters, &report.test_times, &report.query_times, &report.average_vec_size);
     auto end = std::chrono::high_resolution_clock::now();
 
     std::move(results.begin(), results.end(), std::inserter(report.results, report.results.begin()));
@@ -81,9 +81,10 @@ void format_report(QueryReport serial, QueryReport random, QueryReport semantic)
     std::cout << "                    |     Serial     |     Random Clusters     |     Semantic Clusters     \n";
     std::cout << "Total results:      " << std::setw(10) << serial.result_count() << std::setw(10) << random.result_count() << std::setw(10) << semantic.result_count() << '\n';
     std::cout << "Skipped Clusters:   " << std::setw(10) << serial.skipped_clusters << std::setw(10) << random.skipped_clusters << std::setw(10) << semantic.skipped_clusters << '\n';
+    std::cout << "Mean vector length: " << std::setw(10) << ' ' << std::setw(10) << random.average_vec_size << std::setw(10) << semantic.average_vec_size << '\n';
     std::cout << "Total elapsed time: " << std::setw(10) << serial.total_elapsed_time.count() << "us " << std::setw(10) << random.total_elapsed_time.count() << "us " << std::setw(10) << semantic.total_elapsed_time.count() << "us " << '\n';
     std::cout << "Average test time:  " << std::setw(10) << ' ' << std::setw(10) << random.average_test_time() << std::setw(10) << semantic.average_test_time() << '\n';
-    std::cout << "Average query time: " << std::setw(10) << ' ' << std::setw(10) << random.average_query_time() << std::setw(10) << semantic.average_query_time() << '\n';;
+    std::cout << "Average query time: " << std::setw(10) << ' ' << std::setw(10) << random.average_query_time() << std::setw(10) << semantic.average_query_time() << '\n';
 }
 
 int main(int argc, char **argv) {

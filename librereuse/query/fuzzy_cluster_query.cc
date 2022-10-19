@@ -11,7 +11,7 @@ rereuse::query::FuzzyClusterQuery::FuzzyClusterQuery(const std::unordered_set<st
 }
 
 std::unordered_set<std::string>
-rereuse::query::FuzzyClusterQuery::query(const std::shared_ptr<rereuse::db::Cluster> &cluster, std::chrono::microseconds *duration) {
+rereuse::query::FuzzyClusterQuery::query(const std::shared_ptr<rereuse::db::Cluster> &cluster, std::chrono::microseconds *duration, double *average_vector_size) {
 
     std::unordered_set<std::string> potential_matches;
     auto matches_inserter = std::inserter(potential_matches, potential_matches.begin());

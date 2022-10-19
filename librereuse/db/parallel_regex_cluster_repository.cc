@@ -24,7 +24,7 @@ public:
 
     void push(const std::shared_ptr<rereuse::query::BaseClusterQuery> &query,
               const std::shared_ptr<rereuse::db::Cluster> &cluster) {
-        Task task([query, cluster] { return query->query(cluster, nullptr); });
+        Task task([query, cluster] { return query->query(cluster, nullptr, nullptr); });
         this->push(std::move(task));
     }
 
@@ -132,7 +132,7 @@ rereuse::db::ParallelRegexClusterRepository::query(const std::unique_ptr<rereuse
     for (const auto &cluster : this->clusters) {
         // TODO this actually uses a deprecated tool :(
         auto task_future = work_pool.enqueue([&cluster, &query] {
-            return query->query(cluster, nullptr);
+            return query->query(cluster, nullptr, nullptr);
         });
         tasks.push_back(std::move(task_future));
     }
