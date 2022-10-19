@@ -8,7 +8,6 @@
 
 #include <utility>
 #include <numeric>
-#include <set>
 
 rereuse::query::ClusterMatchQuery::ClusterMatchQuery(std::unordered_set<std::string> positive,
                                                      std::unordered_set<std::string> negative)
@@ -80,9 +79,6 @@ rereuse::query::ClusterMatchQuery::query(const std::shared_ptr<rereuse::db::Clus
 }
 
 bool rereuse::query::ClusterMatchQuery::test(const std::shared_ptr<rereuse::db::Cluster> &cluster, std::chrono::microseconds *duration) {
-    std::unordered_set<std::string> potential_matches;
-    auto matches_inserter = std::inserter(potential_matches, potential_matches.begin());
-
     auto start = std::chrono::high_resolution_clock::now();
     for (const auto &pos : positive) {
         std::vector<int> hits;
