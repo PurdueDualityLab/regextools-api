@@ -152,8 +152,7 @@ rereuse::db::RegexClusterRepository::query(const std::unique_ptr<rereuse::query:
             average_vector_sizes.push_back(average_vec_size);
             query_happened = true;
             // Move all the results to combined results
-            std::set_union(results.cbegin(), results.cend(), combined_results.cbegin(), combined_results.cend(),
-                           std::inserter(combined_results, combined_results.begin()));
+            std::copy(results.cbegin(), results.cend(), std::inserter(combined_results, combined_results.begin()));
         } else {
             spdlog::debug("Skipped cluster #{}", cluster_id);
             if (skipped_clusters) {
@@ -183,6 +182,9 @@ bool rereuse::db::RegexClusterRepository::add_cluster(std::unique_ptr<Cluster> c
     std::shared_ptr<Cluster> new_cluster_ptr = std::move(cluster);
     bool compiled = new_cluster_ptr->compile();
     if (compiled) {
+#if 0
+        new_cluster_ptr->prime();
+#endif
         this->clusters.push_back(new_cluster_ptr);
     }
 

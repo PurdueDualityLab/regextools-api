@@ -58,8 +58,8 @@ struct BenchmarkReportLabels {
             "Skipped Clusters"sv,
             "Average Positive Vector Size"sv,
             "Total Elapsed Time (ms)"sv,
-            "Median Test Time (us)"sv,
-            "Median Drill Time (us)"sv,
+            "Median Test Time (ms)"sv,
+            "Median Drill Time (ms)"sv,
     };
 
     static constexpr long key_idx(std::string_view key) {

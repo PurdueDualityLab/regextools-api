@@ -1,1 +1,1 @@
-build --cxxopt="--std=c++17"
+build --cxxopt="--std=c++17" --sandbox_writable_path=/run/user/1000/ccache-tmp --sandbox_writable_path=/home/charlie/.cache/ccache

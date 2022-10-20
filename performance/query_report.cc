@@ -37,6 +37,14 @@ BenchmarkReport::BenchmarkReport() {
     }
 }
 
+template <class DurationTp>
+double to_ms_double(const DurationTp &duration) {
+    std::chrono::duration<double, std::milli> ms {};
+    ms = std::chrono::duration_cast<decltype(ms)>(duration);
+
+    return ms.count();
+}
+
 void BenchmarkReport::add_query_report(std::string label, const QueryReport &report) {
     auto col_idx = this->csv.push_col(std::move(label));
     this->csv.cell(BenchmarkReportLabels::key_idx("Positive Examples"sv), col_idx) << report.positive_examples_count;
@@ -44,9 +52,15 @@ void BenchmarkReport::add_query_report(std::string label, const QueryReport &rep
     this->csv.cell(BenchmarkReportLabels::key_idx("Results"sv), col_idx) << report.result_count();
     this->csv.cell(BenchmarkReportLabels::key_idx("Skipped Clusters"sv), col_idx) << report.skipped_clusters;
     this->csv.cell(BenchmarkReportLabels::key_idx("Average Positive Vector Size"sv), col_idx) << report.average_vec_size;
+#if 0
     this->csv.cell(BenchmarkReportLabels::key_idx("Total Elapsed Time (ms)"sv), col_idx) << report.total_elapsed_time.count();
     this->csv.cell(BenchmarkReportLabels::key_idx("Median Test Time (us)"sv), col_idx) << report.median_test_time().count();
     this->csv.cell(BenchmarkReportLabels::key_idx("Median Drill Time (us)"sv), col_idx) << report.median_query_time().count();
+#else
+    this->csv.cell(BenchmarkReportLabels::key_idx("Total Elapsed Time (ms)"sv), col_idx) << to_ms_double(report.total_elapsed_time);
+    this->csv.cell(BenchmarkReportLabels::key_idx("Median Test Time (ms)"sv), col_idx) << to_ms_double(report.median_test_time());
+    this->csv.cell(BenchmarkReportLabels::key_idx("Median Drill Time (ms)"sv), col_idx) << to_ms_double(report.median_query_time());
+#endif
 }
 
 std::ostream &operator<<(std::ostream &os, const BenchmarkReport &report) {

@@ -3,8 +3,8 @@
 //
 #include "cluster.h"
 
-#include <iostream>
 #include "spdlog/spdlog.h"
+#include "egret.h"
 
 rereuse::db::Cluster::Cluster(const std::unordered_set<std::string> &patterns)
         : size(0),
@@ -60,4 +60,26 @@ bool rereuse::db::Cluster::compile() {
 // Return a reference to the owned object (not sure if ths is good...)
 const RE2::Set &rereuse::db::Cluster::get_regex_set() const {
     return *this->regex_set;
+}
+
+void rereuse::db::Cluster::prime() {
+    if (!this->is_compiled()) {
+        spdlog::error("Cluster must be compiled before priming");
+        return;
+    }
+
+    // Generate a set of strings for this cluster
+    std::unordered_set<std::string> priming_strings;
+    for (const auto &pattern : this->patterns) {
+        auto strings = run_engine(pattern, "regexes");
+        std::move(strings.begin(), strings.end(), std::inserter(priming_strings, priming_strings.begin()));
+    }
+
+    // We have a set of strings that should cover the cluster. Run them all to "prime" this cluster
+    for (const auto &priming_string : priming_strings) {
+        std::vector<int> indices;
+        this->regex_set->Match(priming_string, &indices);
+    }
+
+    // Primed
 }

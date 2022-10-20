@@ -23,6 +23,10 @@ namespace rereuse::db {
         int get_size() const { return this->size; }
         bool is_compiled() const { return this->set_is_compiled; }
         std::vector<std::string> &get_patterns() { return this->patterns; }
+        /**
+         * Primes the set cache for this specific cluster, improving performance
+         */
+        void prime();
 
         const RE2::Set &get_regex_set() const;
 

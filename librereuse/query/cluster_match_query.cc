@@ -130,5 +130,3 @@ double rereuse::query::ClusterMatchQuery::average_negative_size() const {
                                            [&](const std::string &str) -> std::string::size_type { return str.size(); });
     return (double) total_size / (double) this->negative.size();
 }
-
-

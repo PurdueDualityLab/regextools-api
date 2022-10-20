@@ -178,9 +178,18 @@ int main(int argc, char **argv) {
         report.add_query_report("Serial (1st)", serial_report[0]);
         report.add_query_report("Random (1st)", random_report[0]);
         report.add_query_report("Semantic (1st)", semantic_report[0]);
+#if 0
         report.add_query_report("Serial (median n=6)", median_query_report(serial_report));
         report.add_query_report("Random (median n=6)", median_query_report(random_report));
         report.add_query_report("Semantic (median n=6)", median_query_report(semantic_report));
+#else
+        serial_report.erase(serial_report.begin());
+        random_report.erase(random_report.begin());
+        semantic_report.erase(semantic_report.begin());
+        report.add_query_report("Serial (median n=6-1)", median_query_report(serial_report));
+        report.add_query_report("Random (median n=6-1)", median_query_report(random_report));
+        report.add_query_report("Semantic (median n=6-1)", median_query_report(semantic_report));
+#endif
 
         reports[name] = std::move(report);
     }
