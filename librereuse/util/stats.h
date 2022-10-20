@@ -118,6 +118,59 @@ namespace rereuse::util {
             }
         }
     }
+
+    template <typename DurationIter>
+    auto mean_duration(DurationIter begin, DurationIter end) -> typename std::iterator_traits<DurationIter>::value_type {
+        using ValueType = typename std::iterator_traits<DurationIter>::value_type;
+        static_assert(std::is_same_v<
+                std::chrono::duration<
+                        typename ValueType::rep,
+                        typename ValueType::period
+                >,
+                ValueType>);
+
+        auto container_size = std::distance(begin, end);
+        if (container_size == 0)
+            return ValueType();
+
+        ValueType sum;
+        for (auto it = begin; it != end; ++it) {
+            sum += *it;
+        }
+
+        return sum / container_size;
+    }
+
+    template <typename DurationIter>
+    auto median_duration(DurationIter begin, DurationIter end) -> typename std::iterator_traits<DurationIter>::value_type {
+        using ValueType = typename std::iterator_traits<DurationIter>::value_type;
+        static_assert(std::is_same_v<
+                std::chrono::duration<
+                        typename ValueType::rep,
+                        typename ValueType::period
+                        >,
+                ValueType>);
+
+        if (std::distance(begin, end) == 0)
+            return ValueType();
+
+        std::vector<typename std::iterator_traits<DurationIter>::value_type> copied_durations(begin, end);
+        std::sort(copied_durations.begin(), copied_durations.end());
+
+        ValueType median;
+        auto container_size = copied_durations.size();
+        if (container_size % 2 == 0) {
+            // Even number
+            int left_idx = (container_size / 2) - 1;
+            int right_idx = (container_size / 2);
+            median = copied_durations[left_idx] + copied_durations[right_idx] / 2;
+        } else {
+            int middle = container_size / 2;
+            median = copied_durations[middle];
+        }
+
+        return median;
+    }
 }
 
 #endif //_STATS_H

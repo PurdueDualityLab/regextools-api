@@ -12,6 +12,7 @@ cc_library(
         "query/match_query.cc",
         "query/miss_score.cc",
         "util/bitmap.cc",
+        "util/csv.cc",
     ],
     hdrs = [
         "db/cluster.h",
@@ -27,6 +28,7 @@ cc_library(
         "query/match_query.h",
         "query/miss_score.h",
         "util/bitmap.h",
+        "util/csv.h",
         "util/is_iterable.h",
         "util/stats.h",
     ],

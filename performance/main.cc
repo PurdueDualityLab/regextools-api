@@ -2,14 +2,13 @@
 // Created by charlie on 10/10/22.
 //
 
-#include "performance/report.h"
 #include "arg_parser.h"
 #include "query_report.h"
 
 #include <iostream>
 #include <random>
-#include <iomanip>
 #include <spdlog/spdlog.h>
+#include <spdlog/stopwatch.h>
 #include "librereuse/db/pattern_reader.h"
 #include "librereuse/db/regex_repository.h"
 #include "librereuse/db/regex_cluster_repository.h"
@@ -51,40 +50,56 @@ std::vector<std::unique_ptr<rereuse::db::Cluster>> randomize_clusters(const std:
     return new_clusters;
 }
 
-QueryReport measure_no_clusters(const std::vector<std::string> &patterns, const std::unique_ptr<rereuse::query::BaseRegexQuery> &query) {
-    QueryReport report;
+static std::vector<QueryReport> measure_no_clusters(rereuse::db::RegexRepository &serial_repo, const std::unique_ptr<rereuse::query::BaseRegexQuery> &query, unsigned int count) {
+    std::vector<QueryReport> reports(count);
+    auto positive_count = dynamic_cast<rereuse::query::MatchQuery*>(query.get())->get_positive().size();
+    auto negative_count = dynamic_cast<rereuse::query::MatchQuery*>(query.get())->get_negative().size();
 
-    rereuse::db::RegexRepository repo(patterns);
-    auto start = std::chrono::high_resolution_clock::now();
-    auto results = repo.query(query);
-    auto end = std::chrono::high_resolution_clock::now();
+    unsigned int i = 0;
+    for (auto & it : reports) {
+        QueryReport report;
 
-    std::move(results.begin(), results.end(), std::inserter(report.results, report.results.begin()));
-    report.total_elapsed_time = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        spdlog::stopwatch sw;
+        spdlog::debug("Start serial query {}... {}", i, sw);
+        auto start = std::chrono::high_resolution_clock::now();
+        auto results = serial_repo.query(query);
+        auto end = std::chrono::high_resolution_clock::now();
+        spdlog::debug("{} Done... {:.3}", i, sw);
 
-    return report;
+        std::move(results.begin(), results.end(), std::inserter(report.results, report.results.begin()));
+        report.total_elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        report.positive_examples_count = positive_count;
+        report.negative_examples_count = negative_count;
+        it = std::move(report);
+        i++;
+    }
+
+    return reports;
 }
 
-QueryReport measure_clusters(const rereuse::db::RegexClusterRepository &repo, const std::unique_ptr<rereuse::query::BaseClusterQuery> &query) {
-    QueryReport report;
-    auto start = std::chrono::high_resolution_clock::now();
-    auto results = repo.query(query, &report.skipped_clusters, &report.test_times, &report.query_times, &report.average_vec_size);
-    auto end = std::chrono::high_resolution_clock::now();
+static std::vector<QueryReport> measure_clusters(const rereuse::db::RegexClusterRepository &repo, const std::unique_ptr<rereuse::query::BaseClusterQuery> &query, unsigned int count) {
+    std::vector<QueryReport> reports(count);
+    auto positive_count = dynamic_cast<rereuse::query::ClusterMatchQuery*>(query.get())->positive_examples_count();
+    auto negative_count = dynamic_cast<rereuse::query::ClusterMatchQuery*>(query.get())->negative_examples_count();
+    unsigned int i = 0;
+    for (auto & it : reports) {
+        QueryReport report;
+        spdlog::stopwatch sw;
+        spdlog::info("Start measuring cluster query... {}", sw);
+        auto start = std::chrono::high_resolution_clock::now();
+        auto results = repo.query(query, &report.skipped_clusters, &report.test_times, &report.query_times, &report.average_vec_size);
+        auto end = std::chrono::high_resolution_clock::now();
+        spdlog::info("Done... {:.3}", sw);
 
-    std::move(results.begin(), results.end(), std::inserter(report.results, report.results.begin()));
-    report.total_elapsed_time = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        std::move(results.begin(), results.end(), std::inserter(report.results, report.results.begin()));
+        report.total_elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        report.positive_examples_count = positive_count;
+        report.negative_examples_count = negative_count;
+        it = std::move(report);
+        i++;
+    };
 
-    return report;
-}
-
-void format_report(QueryReport serial, QueryReport random, QueryReport semantic) {
-    std::cout << "                    |     Serial     |     Random Clusters     |     Semantic Clusters     \n";
-    std::cout << "Total results:      " << std::setw(10) << serial.result_count() << std::setw(10) << random.result_count() << std::setw(10) << semantic.result_count() << '\n';
-    std::cout << "Skipped Clusters:   " << std::setw(10) << serial.skipped_clusters << std::setw(10) << random.skipped_clusters << std::setw(10) << semantic.skipped_clusters << '\n';
-    std::cout << "Mean vector length: " << std::setw(10) << ' ' << std::setw(10) << random.average_vec_size << std::setw(10) << semantic.average_vec_size << '\n';
-    std::cout << "Total elapsed time: " << std::setw(10) << serial.total_elapsed_time.count() << "us " << std::setw(10) << random.total_elapsed_time.count() << "us " << std::setw(10) << semantic.total_elapsed_time.count() << "us " << '\n';
-    std::cout << "Average test time:  " << std::setw(10) << ' ' << std::setw(10) << random.average_test_time() << std::setw(10) << semantic.average_test_time() << '\n';
-    std::cout << "Average query time: " << std::setw(10) << ' ' << std::setw(10) << random.average_query_time() << std::setw(10) << semantic.average_query_time() << '\n';
+    return reports;
 }
 
 int main(int argc, char **argv) {
@@ -98,8 +113,11 @@ int main(int argc, char **argv) {
         return 0;
     }
 
+    // Break down the spec file into a spec object
+    BenchmarkingSpec bench_spec(args.spec_file);
+
     // Take semantic clusters
-    auto semantic_clusters = rereuse::db::read_semantic_clusters(args.cluster_file);
+    auto semantic_clusters = rereuse::db::read_semantic_clusters(bench_spec.db_file_path);
     spdlog::info("Loaded {} semantic clusters", semantic_clusters.size());
 
     // Duplicate all the patterns
@@ -110,12 +128,7 @@ int main(int argc, char **argv) {
     auto randomized_clusters = randomize_clusters(all_patterns, 100);
     spdlog::debug("Create {} new randomized clusters", randomized_clusters.size());
 
-    // See how each performs
-    std::unordered_set<std::string> positive_examples = {"cmsale@purdue.edu", "chucks.8090@gmail.com"};
-    std::unordered_set<std::string> negative_examples = {"cmsale", "cmsale@", "cmsale@purdue"};
-
-    std::unique_ptr<rereuse::query::BaseRegexQuery> serial_query = std::make_unique<rereuse::query::MatchQuery>(positive_examples, negative_examples);
-    std::unique_ptr<rereuse::query::BaseClusterQuery> cluster_query = std::make_unique<rereuse::query::ClusterMatchQuery>(positive_examples, negative_examples);
+    rereuse::db::RegexRepository serial_repo(all_patterns);
 
     rereuse::db::RegexClusterRepository semantic_repo;
     for (auto &cluster : semantic_clusters) {
@@ -127,18 +140,55 @@ int main(int argc, char **argv) {
         random_repo.add_cluster(std::move(cluster));
     }
 
-    spdlog::info("Measuring serial report...");
-    QueryReport serial_report = measure_no_clusters(all_patterns, serial_query);
-    spdlog::info("Measuring random report...");
-    QueryReport random_report = measure_clusters(random_repo, cluster_query);
-    spdlog::info("Measuring cluster report...");
-    QueryReport semantic_report = measure_clusters(semantic_repo, cluster_query);
-    spdlog::info("Measuring random report again...");
-    random_report = measure_clusters(random_repo, cluster_query);
-    spdlog::info("Measuring cluster report again...");
-    semantic_report = measure_clusters(semantic_repo, cluster_query);
+    std::unordered_map<std::string, BenchmarkReport> reports;
 
-    format_report(serial_report, random_report, semantic_report);
+    for (const auto &[name, queries] : bench_spec.queries) {
+
+        const auto &[cluster_query, serial_query] = queries;
+
+        spdlog::info("{}: Measuring serial report...", name);
+        auto serial_report = measure_no_clusters(serial_repo, serial_query, 6);
+        spdlog::info("{}: Measuring random report...", name);
+        auto random_report = measure_clusters(random_repo, cluster_query, 6);
+        spdlog::info("{}: Measuring semantic report...", name);
+        auto semantic_report = measure_clusters(semantic_repo, cluster_query, 6);
+
+        std::cout << "--------VECTORS----------" << std::endl;
+        std::cout << name << ": Random test times:" << std::endl;
+        auto random_med = median_query_report(random_report);
+        auto semantic_med = median_query_report(semantic_report);
+        for (const auto &time : random_med.test_times) {
+            std::cout << time.count() << ',';
+        }
+        std::cout << "\n\nRandom query times:" << std::endl;
+        for (const auto &time : random_med.query_times) {
+            std::cout << time.count() << ',';
+        }
+        std::cout << "\n\nSemantic test times" << std::endl;
+        for (const auto &time : semantic_med.test_times) {
+            std::cout << time.count() << ',';
+        }
+        std::cout << "\n\nRandom query times:" << std::endl;
+        for (const auto &time : semantic_med.query_times) {
+            std::cout << time.count() << ',';
+        }
+        std::cout << "------END VECTORS-------" << std::endl;
+
+        BenchmarkReport report;
+        report.add_query_report("Serial (1st)", serial_report[0]);
+        report.add_query_report("Random (1st)", random_report[0]);
+        report.add_query_report("Semantic (1st)", semantic_report[0]);
+        report.add_query_report("Serial (median n=6)", median_query_report(serial_report));
+        report.add_query_report("Random (median n=6)", median_query_report(random_report));
+        report.add_query_report("Semantic (median n=6)", median_query_report(semantic_report));
+
+        reports[name] = std::move(report);
+    }
+
+    for (const auto &[name, report] : reports) {
+        std::cout << '\n' << name << std::endl;
+        std::cout << report;
+    }
 
     return 0;
 }
