@@ -30,8 +30,11 @@ grpc::Status regextools::QueryServiceImpl::ExecQuery(::grpc::ServerContext *cont
     std::unique_ptr<rereuse::query::BaseClusterQuery> query = std::make_unique<rereuse::query::ClusterMatchQuery>(positive_examples, negative_examples);
 
     auto results = this->repo->query(query);
-    for (auto &result : results) {
-        response->add_results(result);
+    std::vector<std::string> pruned_results;
+    std::copy_n(results.begin(), 100, std::back_inserter(pruned_results));
+
+    for (auto &result : pruned_results) {
+        response->add_results(std::move(result));
     }
 
     response->set_total(results.size());

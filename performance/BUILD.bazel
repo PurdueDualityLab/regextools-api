@@ -1,11 +1,21 @@
-cc_binary(
-    name = "benchmark",
+filegroup(
+    name = "args_parser_utils",
     srcs = [
         "arg_parser.cc",
         "arg_parser.h",
+    ],
+    visibility = [
+        "//visibility:public",
+    ],
+)
+
+cc_binary(
+    name = "benchmark",
+    srcs = [
         "main.cc",
         "query_report.cc",
         "query_report.h",
+        ":args_parser_utils",
     ],
     deps = [
         "//librereuse:rereuse",

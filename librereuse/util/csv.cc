@@ -9,9 +9,9 @@
 std::size_t rereuse::util::CSV::push_row(std::string header) {
 
     // Add the row header
+    auto idx = this->row_headers.size();
     this->row_headers.push_back(std::move(header));
     // Push a new row with the column count
-    auto idx = this->row_headers.size();
     this->data.emplace_back(this->column_headers.size());
 
     return idx;

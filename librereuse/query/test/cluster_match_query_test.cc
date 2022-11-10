@@ -47,7 +47,7 @@ TEST_F(ClusterMatchQueryFixture, should_get_all_matches) {
     auto is_candidate = query.test(this->big_cluster, nullptr);
     EXPECT_TRUE(is_candidate);
 
-    auto results = query.query(this->big_cluster, nullptr);
+    auto results = query.query(this->big_cluster, nullptr, nullptr, nullptr, nullptr, nullptr);
     EXPECT_EQ(results.size(), 3);
 }
 
@@ -56,7 +56,7 @@ TEST_F(ClusterMatchQueryFixture, reject_on_positives) {
     auto is_candidate = query.test(this->big_cluster, nullptr);
     EXPECT_FALSE(is_candidate);
 
-    auto results = query.query(this->big_cluster, nullptr);
+    auto results = query.query(this->big_cluster, nullptr, nullptr, nullptr, nullptr, nullptr);
     EXPECT_EQ(results.size(), 0);
 }
 
@@ -68,6 +68,6 @@ TEST_F(ClusterMatchQueryFixture, reject_on_negative) {
     auto is_candidate = query.test(smaller_cluster, nullptr);
     EXPECT_FALSE(is_candidate);
 
-    auto results = query.query(smaller_cluster, nullptr);
+    auto results = query.query(smaller_cluster, nullptr, nullptr, nullptr, nullptr, nullptr);
     EXPECT_EQ(results.size(), 0);
 }

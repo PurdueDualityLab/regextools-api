@@ -1,0 +1,59 @@
+filegroup(
+    name = "memory_report",
+    srcs = [
+        "memory_report.cc",
+        "memory_report.h",
+    ],
+)
+
+cc_binary(
+    name = "serial_repo",
+    srcs = [
+        "serial_repo.cc",
+        ":memory_report",
+        "//performance:args_parser_utils",
+    ],
+    deps = [
+        "//librereuse:rereuse",
+        "@com_gabime_spdlog//:spdlog",
+    ],
+)
+
+cc_binary(
+    name = "random_repo",
+    srcs = [
+        "random_repo.cc",
+        ":memory_report",
+        "//performance:args_parser_utils",
+    ],
+    deps = [
+        "//librereuse:rereuse",
+        "@com_gabime_spdlog//:spdlog",
+    ],
+)
+
+cc_binary(
+    name = "semantic_repo",
+    srcs = [
+        "semantic_repo.cc",
+        ":memory_report",
+        "//performance:args_parser_utils",
+    ],
+    deps = [
+        "//librereuse:rereuse",
+        "@com_gabime_spdlog//:spdlog",
+    ],
+)
+
+cc_binary(
+    name = "full_dfa",
+    srcs = [
+        "full_dfa.cc",
+        ":memory_report",
+    ],
+    deps = [
+        "//librereuse:rereuse",
+        "@com_gabime_spdlog//:spdlog",
+        "@com_googlesource_code_re2//:re2",
+    ],
+)

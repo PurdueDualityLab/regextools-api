@@ -1,0 +1,25 @@
+cc_binary(
+    name = "cache-test",
+    srcs = ["cache_test.cc"],
+    deps = [
+        "//librereuse:rereuse",
+        "@com_googlesource_code_re2//:re2",
+    ],
+)
+
+cc_binary(
+    name = "full-dfa",
+    srcs = ["full_dfa.cc"],
+    deps = [
+        "@com_googlesource_code_re2//:re2",
+    ],
+)
+
+cc_binary(
+    name = "cluster-randomizer",
+    srcs = ["randomize_clusters.cc"],
+    deps = [
+        "//librereuse:rereuse",
+        "@com_github_nlohmann_json//:json",
+    ],
+)

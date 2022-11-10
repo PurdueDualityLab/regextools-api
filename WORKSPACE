@@ -1,6 +1,7 @@
 # Need that archive
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 # Set up go
 http_archive(
@@ -48,11 +49,23 @@ http_archive(
 )
 
 # RE2 - regex engine dependency
-http_archive(
+# This version is the original Google version
+# http_archive(
+#     name = "com_googlesource_code_re2",
+#     sha256 = "f89c61410a072e5cbcf8c27e3a778da7d6fd2f2b5b1445cd4f4508bee946ab0f",
+#     strip_prefix = "re2-2022-06-01",
+#     url = "https://github.com/google/re2/archive/refs/tags/2022-06-01.tar.gz",
+# )
+# Use this if you have the duality lab version cloned locally
+# local_repository(
+#     name = "com_googlesource_code_re2",
+#     path = "/home/charlie/Programming/re2",
+# )
+git_repository(
     name = "com_googlesource_code_re2",
-    sha256 = "f89c61410a072e5cbcf8c27e3a778da7d6fd2f2b5b1445cd4f4508bee946ab0f",
-    strip_prefix = "re2-2022-06-01",
-    url = "https://github.com/google/re2/archive/refs/tags/2022-06-01.tar.gz",
+    commit = "e37bce5b74af62d45f69ca83c54e2176b8173b5c",
+    remote = "git@github.com:PurdueDualityLab/re2.git",
+    shallow_since = "1668119464 -0500",
 )
 
 # github.com/nlohmann/json - C++ JSON parsing utilities

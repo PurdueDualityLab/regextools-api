@@ -19,7 +19,7 @@ namespace rereuse::db {
         explicit Cluster(const std::unordered_set<std::string>& patterns);
 
         bool add_pattern(const std::string &pattern);
-        bool compile();
+        bool compile(bool eager = false);
         int get_size() const { return this->size; }
         bool is_compiled() const { return this->set_is_compiled; }
         std::vector<std::string> &get_patterns() { return this->patterns; }

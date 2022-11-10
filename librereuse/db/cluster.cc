@@ -1,6 +1,7 @@
 //
 // Created by charlie on 8/31/21.
 //
+#include <random>
 #include "cluster.h"
 
 #include "spdlog/spdlog.h"
@@ -32,6 +33,8 @@ rereuse::db::Cluster::Cluster()
           set_is_compiled(false) {
     auto opts = RE2::Options();
     // opts.set_log_errors(false);
+    auto max_mem_size = static_cast<int64_t>(1073741824) * 2; // 1GiB * num of GiBs
+    opts.set_max_mem(max_mem_size); // 1 GiB of memory
     this->regex_set = std::make_unique<RE2::Set>(opts, RE2::ANCHOR_BOTH);
 }
 
@@ -50,9 +53,9 @@ bool rereuse::db::Cluster::add_pattern(const std::string &pattern) {
     }
 }
 
-bool rereuse::db::Cluster::compile() {
+bool rereuse::db::Cluster::compile(bool eager) {
     if (!this->set_is_compiled) {
-        this->set_is_compiled = this->regex_set->Compile();
+        this->set_is_compiled = this->regex_set->Compile(eager);
     }
     return this->set_is_compiled;
 }
@@ -60,6 +63,30 @@ bool rereuse::db::Cluster::compile() {
 // Return a reference to the owned object (not sure if ths is good...)
 const RE2::Set &rereuse::db::Cluster::get_regex_set() const {
     return *this->regex_set;
+}
+
+static std::unordered_set<std::string> cull_string_set(std::unordered_set<std::string> &&strings, std::size_t end_size) {
+    if (end_size > strings.size()) {
+        return strings;
+    }
+
+    std::vector<std::string> input_strings;
+    std::move(strings.begin(), strings.end(), std::back_inserter(input_strings));
+    std::unordered_set<std::string> culled_strings;
+
+    // Choose end_size number of indices to take
+    auto randomizer = std::mt19937(std::random_device()());
+    std::uniform_int_distribution<std::mt19937::result_type> to_remove_dist(0, input_strings.size() - 1);
+    std::vector<std::size_t> selected_strings(end_size);
+    for (auto &selected_string_idx : selected_strings) {
+        selected_string_idx = to_remove_dist(randomizer);
+    }
+
+    for (const auto &idx : selected_strings) {
+        culled_strings.insert(std::move(input_strings[idx]));
+    }
+
+    return culled_strings;
 }
 
 void rereuse::db::Cluster::prime() {
@@ -72,13 +99,27 @@ void rereuse::db::Cluster::prime() {
     std::unordered_set<std::string> priming_strings;
     for (const auto &pattern : this->patterns) {
         auto strings = run_engine(pattern, "regexes");
-        std::move(strings.begin(), strings.end(), std::inserter(priming_strings, priming_strings.begin()));
+        re2::RE2 pattern_regex(pattern);
+        std::unordered_set<std::string> positive_strings;
+        //std::copy_if(strings.begin(), strings.end(), std::inserter(positive_strings, positive_strings.begin()), [&pattern_regex](std::string &str) { return re2::RE2::FullMatch(str, pattern_regex); });
+        std::copy_if(strings.begin(), strings.end(), std::inserter(positive_strings, positive_strings.begin()), [&pattern_regex](std::string &str) { return true; });
+
+        positive_strings = cull_string_set(std::move(positive_strings), 7);
+
+        std::move(positive_strings.begin(), positive_strings.end(), std::inserter(priming_strings, priming_strings.begin()));
+    }
+
+    if constexpr (true) {
+        priming_strings = cull_string_set(std::move(priming_strings), priming_strings.size() >> 1);
     }
 
     // We have a set of strings that should cover the cluster. Run them all to "prime" this cluster
+    unsigned long id = 0;
+    spdlog::info("Testing {} strings", priming_strings.size());
     for (const auto &priming_string : priming_strings) {
         std::vector<int> indices;
         this->regex_set->Match(priming_string, &indices);
+        // spdlog::info("Tested string {}/{}", ++id, priming_strings.size());
     }
 
     // Primed

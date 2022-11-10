@@ -25,17 +25,6 @@ struct QueryReport {
     , average_vec_size(0)
     {}
 
-    double average_test_time() const;
-    double average_query_time() const;
-
-    std::chrono::microseconds median_test_time() const {
-        return rereuse::util::median_duration(this->test_times.cbegin(), this->test_times.cend());
-    }
-
-    std::chrono::microseconds median_query_time() const {
-        return rereuse::util::median_duration(this->query_times.cbegin(), this->query_times.cend());
-    }
-
     unsigned long result_count() const { return results.size(); }
 
     std::unordered_set<std::string> results;
@@ -43,22 +32,25 @@ struct QueryReport {
     std::size_t negative_examples_count;
     unsigned long skipped_clusters;
     std::chrono::milliseconds total_elapsed_time;
-    std::vector<std::chrono::microseconds> test_times;
-    std::vector<std::chrono::microseconds> query_times;
+    std::chrono::microseconds median_test_pass_time{};
+    std::chrono::microseconds median_test_fail_time{};
+    std::chrono::microseconds median_drill_time{};
     double average_vec_size;
 };
 
 using namespace std::string_view_literals;
 struct BenchmarkReportLabels {
 
-    static constexpr std::array<std::string_view, 8> categories = {
+    static constexpr std::array<std::string_view, 10> categories = {
             "Positive Examples"sv,
             "Negative Examples"sv,
             "Results"sv,
             "Skipped Clusters"sv,
+            "Skipped Cluster Percentage"sv,
             "Average Positive Vector Size"sv,
             "Total Elapsed Time (ms)"sv,
-            "Median Test Time (ms)"sv,
+            "Median Test Hit Time (ms)"sv,
+            "Median Test Fail Time (ms)"sv,
             "Median Drill Time (ms)"sv,
     };
 
@@ -79,12 +71,16 @@ struct BenchmarkReportLabels {
 class BenchmarkReport {
 public:
     BenchmarkReport();
+    explicit BenchmarkReport(std::size_t cluster_count);
 
     void add_query_report(std::string label, const QueryReport &report);
+
+    double skipped_cluster_percentage(std::size_t skipped) const noexcept;
 
     friend std::ostream &operator<<(std::ostream &os, const BenchmarkReport &report);
 
 private:
+    std::size_t cluster_count;
     rereuse::util::CSV csv;
 };
 

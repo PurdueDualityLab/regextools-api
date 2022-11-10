@@ -7,6 +7,7 @@
 #include <fstream>
 
 #include <nlohmann/json.hpp>
+#include <random>
 #include "spdlog/spdlog.h"
 
 using namespace nlohmann;
@@ -100,4 +101,41 @@ std::vector<std::unique_ptr<rereuse::db::Cluster>> rereuse::db::read_semantic_cl
     }
 
     return clusters;
+}
+
+std::vector<std::string> rereuse::db::unpack_patterns(const std::vector<std::unique_ptr<rereuse::db::Cluster>> &clusters) {
+    std::vector<std::string> all_patterns;
+    for (const auto &cluster : clusters) {
+        const auto &patterns = cluster->get_patterns();
+        std::copy(patterns.cbegin(), patterns.cend(), std::back_inserter(all_patterns));
+    }
+
+    return all_patterns;
+}
+
+
+std::vector<std::unique_ptr<rereuse::db::Cluster>> rereuse::db::randomize_clusters(const std::vector<std::string> &all_patterns_orig, unsigned int expected_cluster_size) {
+    // Copy all the patterns
+    std::vector<std::string> all_patterns(all_patterns_orig.cbegin(), all_patterns_orig.cend());
+    // Shuffle their order
+    std::shuffle(all_patterns.begin(), all_patterns.end(), std::mt19937(std::random_device()()));
+    spdlog::debug("randomized_cluster: creating clusters of size {}", expected_cluster_size);
+
+    std::vector<std::unique_ptr<rereuse::db::Cluster>> new_clusters;
+    std::unordered_set<std::string> cluster_strings;
+    for (auto &pattern : all_patterns) {
+        // Add this item to the current cluster strings
+        cluster_strings.insert(std::move(pattern));
+
+        if (cluster_strings.size() == expected_cluster_size) {
+            // This cluster is full
+            auto new_cluster = std::make_unique<rereuse::db::Cluster>(cluster_strings);
+            // Clear the set
+            cluster_strings.clear();
+
+            new_clusters.push_back(std::move(new_cluster));
+        }
+    }
+
+    return new_clusters;
 }

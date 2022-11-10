@@ -131,11 +131,11 @@ TEST(ClusterMatchQueryLive, gets_proper_results) {
     std::unique_ptr<rereuse::query::BaseRegexQuery> simple_query = std::make_unique<rereuse::query::MatchQuery>(pos, neg);
     rereuse::db::RegexRepository repo(std::vector(missing_regexes.cbegin(), missing_regexes.cend()));
 
-    auto results = repo.query(simple_query);
+    auto results = repo.query(simple_query, nullptr, nullptr, nullptr, nullptr, nullptr);
     EXPECT_EQ(results.size(), 4);
 
     ASSERT_TRUE(query->test(cluster, nullptr));
 
-    auto cluster_results = query->query(cluster, nullptr);
+    auto cluster_results = query->query(cluster, nullptr, nullptr, nullptr, nullptr, nullptr);
     EXPECT_EQ(cluster_results.size(), results.size());
 }
