@@ -43,8 +43,6 @@ std::size_t heap_get_allocated_bytes() {
 
     std::string buffer(raw_buffer, raw_buffer_size);
 
-    std::cout << buffer << std::endl;
-
     // parse the buffer
     auto total_size = parse_malloc_info(std::move(buffer));
     return total_size;
