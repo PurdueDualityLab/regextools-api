@@ -57,16 +57,16 @@ http_archive(
 #     url = "https://github.com/google/re2/archive/refs/tags/2022-06-01.tar.gz",
 # )
 # Use this if you have the duality lab version cloned locally
-local_repository(
-    name = "com_googlesource_code_re2",
-    path = "/home/charlie/Programming/re2",
-)
-# git_repository(
+# local_repository(
 #     name = "com_googlesource_code_re2",
-#     commit = "e37bce5b74af62d45f69ca83c54e2176b8173b5c",
-#     remote = "git@github.com:PurdueDualityLab/re2.git",
-#     shallow_since = "1668119464 -0500",
+#     path = "/home/charlie/Programming/re2",
 # )
+git_repository(
+    name = "com_googlesource_code_re2",
+    commit = "e37bce5b74af62d45f69ca83c54e2176b8173b5c",
+    remote = "git@github.com:PurdueDualityLab/re2.git",
+    shallow_since = "1668119464 -0500",
+)
 
 # github.com/nlohmann/json - C++ JSON parsing utilities
 http_archive(
