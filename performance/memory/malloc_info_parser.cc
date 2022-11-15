@@ -30,7 +30,6 @@ std::size_t parse_malloc_info(std::string &&buffer) {
 }
 
 std::size_t heap_get_allocated_bytes() {
-
     char *raw_buffer = nullptr;
     std::size_t raw_buffer_size;
     FILE *stream = open_memstream(&raw_buffer, &raw_buffer_size);

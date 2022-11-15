@@ -4,8 +4,6 @@
 
 #include "memory_report.h"
 
-#include <malloc.h>
-
 rereuse::util::CSV MemoryReport::create_report() const {
     rereuse::util::CSV memory_report;
     auto row = memory_report.push_row(this->key);
@@ -22,8 +20,4 @@ rereuse::util::CSV MemoryReport::create_report() const {
     memory_report.cell(row, query_size_col) << (this->after_query - this->post_db) / 1'000'000;
 
     return memory_report;
-}
-
-std::size_t get_total_allocated_space() {
-    return mallinfo2().uordblks;
 }

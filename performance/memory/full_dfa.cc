@@ -50,24 +50,19 @@ int main(int argc, char **argv) {
 
     // Now, compile
     spdlog::info("Starting to compile. This will take a looooong time...");
-    // auto before_mem = get_total_allocated_space();
-    auto before_alt = heap_get_allocated_bytes();
+    auto before_mem = heap_get_allocated_bytes();
     bool success = false;
     set.Compile(true, &success);
-    // auto after_mem = get_total_allocated_space();
-    auto after_alt = heap_get_allocated_bytes();
+    auto after_mem = heap_get_allocated_bytes();
     spdlog::info("Compilation done. Build status: {}", success);
 
-    auto total_allocated_space = after_alt - before_alt;
+    auto total_allocated_space = after_mem - before_mem;
 
     spdlog::info("Build out DFA size: {}kb", total_allocated_space / 1'000);
 
     std::ofstream output(argv[2]);
     output << (total_allocated_space / 1'000) << std::endl; // only store KB
     output << (success ? "true" : "false") << std::endl;
-
-    auto backup_memory = after_alt - before_alt;
-    spdlog::info("Backup result: {}kb", backup_memory / 1'000);
 
     return 0;
 }

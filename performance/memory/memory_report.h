@@ -26,6 +26,4 @@ struct MemoryReport {
     rereuse::util::CSV create_report() const;
 };
 
-std::size_t get_total_allocated_space();
-
 #endif //REGEXTOOLS_MEMORY_REPORT_H
