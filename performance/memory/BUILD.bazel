@@ -49,11 +49,14 @@ cc_binary(
     name = "full_dfa",
     srcs = [
         "full_dfa.cc",
+        "malloc_info_parser.cc",
+        "malloc_info_parser.h",
         ":memory_report",
     ],
     deps = [
         "//librereuse:rereuse",
         "@com_gabime_spdlog//:spdlog",
+        "@com_github_zeux_pugixml//:pugixml",
         "@com_googlesource_code_re2//:re2",
     ],
 )

@@ -57,16 +57,16 @@ http_archive(
 #     url = "https://github.com/google/re2/archive/refs/tags/2022-06-01.tar.gz",
 # )
 # Use this if you have the duality lab version cloned locally
-# local_repository(
-#     name = "com_googlesource_code_re2",
-#     path = "/home/charlie/Programming/re2",
-# )
-git_repository(
+local_repository(
     name = "com_googlesource_code_re2",
-    commit = "e37bce5b74af62d45f69ca83c54e2176b8173b5c",
-    remote = "git@github.com:PurdueDualityLab/re2.git",
-    shallow_since = "1668119464 -0500",
+    path = "/home/charlie/Programming/re2",
 )
+# git_repository(
+#     name = "com_googlesource_code_re2",
+#     commit = "e37bce5b74af62d45f69ca83c54e2176b8173b5c",
+#     remote = "git@github.com:PurdueDualityLab/re2.git",
+#     shallow_since = "1668119464 -0500",
+# )
 
 # github.com/nlohmann/json - C++ JSON parsing utilities
 http_archive(
@@ -95,6 +95,7 @@ new_git_repository(
     shallow_since = "1411727561 +0200",
 )
 
+# fmtlib - used for formatting strings
 http_archive(
     name = "com_github_fmtlib_fmt",
     build_file = "@//:third_party/fmtlib.BUILD",
@@ -103,6 +104,7 @@ http_archive(
     url = "https://github.com/fmtlib/fmt/releases/download/9.1.0/fmt-9.1.0.zip",
 )
 
+# Logging!!
 http_archive(
     name = "com_gabime_spdlog",
     build_file = "@//:third_party/spdlog.BUILD",
@@ -111,7 +113,7 @@ http_archive(
     url = "https://github.com/gabime/spdlog/archive/refs/tags/v1.10.0.tar.gz",
 )
 
-# egret - regex string generation
+# egret - regex string generation, specifically our fork of the repo
 new_git_repository(
     name = "com_github_dualitylab_egret",
     build_file = "@//:third_party/egret.BUILD",
@@ -126,6 +128,15 @@ http_archive(
     sha256 = "81964fe578e9bd7c94dfdb09c8e4d6e6759e19967e397dbea48d1c10e45d0df2",
     strip_prefix = "googletest-release-1.12.1",
     urls = ["https://github.com/google/googletest/archive/refs/tags/release-1.12.1.tar.gz"],
+)
+
+# pugixml - a tiny xml parser used for ONE thing: parsing malloc_info (booo poor library design)
+new_git_repository(
+    name = "com_github_zeux_pugixml",
+    build_file = "@//:third_party/pugixml.BUILD",
+    commit = "1dc3266fffdb1f37961172c5c96af2f7e6132789",
+    remote = "https://github.com/zeux/pugixml.git",
+    shallow_since = "1667954974 -0800",
 )
 
 ###
