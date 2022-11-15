@@ -63,9 +63,9 @@ http_archive(
 # )
 git_repository(
     name = "com_googlesource_code_re2",
-    commit = "e37bce5b74af62d45f69ca83c54e2176b8173b5c",
+    commit = "2546b2bee1354e083f2bfc3143c0e60de178d20f",
     remote = "git@github.com:PurdueDualityLab/re2.git",
-    shallow_since = "1668119464 -0500",
+    shallow_since = "1668480202 -0500",
 )
 
 # github.com/nlohmann/json - C++ JSON parsing utilities
