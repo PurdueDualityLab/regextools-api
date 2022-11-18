@@ -1,0 +1,11 @@
+filegroup(
+    name = "librereuse_query_srcs",
+    srcs = glob(["*.cc"]),
+    visibility = ["//librereuse:__pkg__"],
+)
+
+filegroup(
+    name = "librereuse_query_hdrs",
+    srcs = glob(["*.h"]),
+    visibility = ["//librereuse:__pkg__"],
+)
