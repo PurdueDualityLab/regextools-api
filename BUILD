@@ -13,3 +13,10 @@ gazelle(
     ],
     command = "update-repos",
 )
+
+# load("@rules_python//python:pip.bzl", "compile_pip_requirements")
+# compile_pip_requirements(
+#   name = "requirements",
+#   requirements_in = "//reports:requirements.in",
+#   requirements_out = "//:requirements_lock.txt",
+# )

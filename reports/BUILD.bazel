@@ -1,0 +1,21 @@
+load("@rules_python//python:defs.bzl", "py_binary")
+load("@pip_deps//:requirements.bzl", "requirement")
+
+py_binary(
+    name = "full-memory-hist",
+    srcs = ["full-memory-hist.py"],
+    deps = [
+        requirement("matplotlib"),
+        requirement("pandas"),
+    ],
+)
+
+
+py_binary(
+    name = "small-memory-hist",
+    srcs = ["small-memory-hist.py"],
+    deps = [
+        requirement("matplotlib"),
+        requirement("pandas"),
+    ],
+)

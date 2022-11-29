@@ -140,6 +140,31 @@ new_git_repository(
 )
 
 ###
+# Set up python
+###
+
+# Adds python language support
+http_archive(
+    name = "rules_python",
+    sha256 = "a868059c8c6dd6ad45a205cca04084c652cfe1852e6df2d5aca036f6e5438380",
+    strip_prefix = "rules_python-0.14.0",
+    url = "https://github.com/bazelbuild/rules_python/archive/refs/tags/0.14.0.tar.gz",
+)
+
+# Install python dependencies with pip
+load("@rules_python//python:pip.bzl", "pip_parse")
+
+pip_parse(
+    name = "pip_deps",
+    requirements_lock = "//:requirements_lock.txt",
+    # quiet = False,
+)
+
+load("@pip_deps//:requirements.bzl", pip_install_deps="install_deps")
+
+pip_install_deps()
+
+###
 # Set up protcol buffers and gRPC
 http_archive(
     name = "rules_proto_grpc",
