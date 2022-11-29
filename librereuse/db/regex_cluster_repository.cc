@@ -137,17 +137,13 @@ int rereuse::db::RegexClusterRepository::pattern_count() const {
     return total_patterns;
 }
 
-std::unordered_set<std::string>
-rereuse::db::RegexClusterRepository::query(const std::unique_ptr<rereuse::query::BaseClusterQuery> &query,
-                                           unsigned long *skipped_clusters,
-                                           std::chrono::microseconds *median_test_fail_time,
-                                           std::chrono::microseconds *median_test_pass_time,
-                                           std::chrono::microseconds *median_drill_time,
-                                           double *average_match_vector_size) const {
+rereuse::query::QueryResult
+rereuse::db::RegexClusterRepository::deep_query(const std::unique_ptr<rereuse::query::BaseClusterQuery> &query) const {
     std::vector<double> average_vector_sizes;
     std::unordered_set<std::string> combined_results;
     unsigned long cluster_id = 0;
     std::vector<std::chrono::microseconds> test_hit_times, test_miss_times, drill_times;
+    unsigned long skipped_clusters = 0;
 
     for (const auto &cluster : this->clusters) {
         std::chrono::microseconds test_duration, query_duration;
@@ -162,33 +158,23 @@ rereuse::db::RegexClusterRepository::query(const std::unique_ptr<rereuse::query:
             drill_times.push_back(query_duration);
         } else {
             spdlog::debug("Skipped cluster #{}", cluster_id);
-            if (skipped_clusters) {
-                *skipped_clusters += 1;
-            }
-
+            skipped_clusters++;
             test_miss_times.push_back(test_duration);
         }
 
         cluster_id++;
     }
 
-    if (average_match_vector_size) {
-        *average_match_vector_size = rereuse::util::mean(average_vector_sizes.cbegin(), average_vector_sizes.cend());
-    }
+    rereuse::query::QueryResult result(
+            std::move(combined_results),
+            skipped_clusters,
+            rereuse::util::median_duration(test_miss_times.cbegin(), test_miss_times.cend()),
+            rereuse::util::median_duration(test_hit_times.cbegin(), test_hit_times.cend()),
+            rereuse::util::median_duration(drill_times.cbegin(), drill_times.cend()),
+            rereuse::util::mean(average_vector_sizes.cbegin(), average_vector_sizes.cend())
+            );
 
-    if (median_test_fail_time) {
-        *median_test_fail_time = rereuse::util::median_duration(test_miss_times.cbegin(), test_miss_times.cend());
-    }
-
-    if (median_test_pass_time) {
-        *median_test_pass_time = rereuse::util::median_duration(test_hit_times.cbegin(), test_hit_times.cend());
-    }
-
-    if (median_drill_time) {
-        *median_drill_time = rereuse::util::median_duration(drill_times.cbegin(), drill_times.cend());
-    }
-
-    return combined_results;
+    return result;
 }
 
 bool rereuse::db::RegexClusterRepository::add_cluster(std::unique_ptr<Cluster> cluster) {

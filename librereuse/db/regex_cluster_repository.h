@@ -12,6 +12,7 @@
 #include "cluster.h"
 #include "../query/base_regex_query.h"
 #include "../query/cluster_match_query.h"
+#include "../query/query_report.h"
 
 namespace rereuse::db {
     /**
@@ -38,13 +39,12 @@ namespace rereuse::db {
 
         virtual std::unordered_set<std::string>
         query(const std::unique_ptr<rereuse::query::BaseClusterQuery> &query) const {
-            return this->query(query, nullptr, nullptr, nullptr, nullptr, nullptr);
+            auto result = this->deep_query(query);
+            return std::move(result.results);
         }
 
-        virtual std::unordered_set<std::string>
-        query(const std::unique_ptr<rereuse::query::BaseClusterQuery> &query, unsigned long *skipped_clusters,
-              std::chrono::microseconds *median_test_fail_time, std::chrono::microseconds *median_test_pass_time,
-              std::chrono::microseconds *median_drill_time, double *average_match_vector_size) const;
+        query::QueryResult
+        deep_query(const std::unique_ptr<rereuse::query::BaseClusterQuery> &query) const;
 
     protected:
         int maxClusterSize;
