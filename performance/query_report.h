@@ -15,28 +15,7 @@
 #include <algorithm>
 #include "librereuse/util/csv.h"
 #include "librereuse/util/stats.h"
-
-struct QueryReport {
-    QueryReport()
-    : positive_examples_count(0)
-    , negative_examples_count(0)
-    , skipped_clusters(0)
-    , total_elapsed_time()
-    , average_vec_size(0)
-    {}
-
-    unsigned long result_count() const { return results.size(); }
-
-    std::unordered_set<std::string> results;
-    std::size_t positive_examples_count;
-    std::size_t negative_examples_count;
-    unsigned long skipped_clusters;
-    std::chrono::milliseconds total_elapsed_time;
-    std::chrono::microseconds median_test_pass_time{};
-    std::chrono::microseconds median_test_fail_time{};
-    std::chrono::microseconds median_drill_time{};
-    double average_vec_size;
-};
+#include "librereuse/query/query_report.h"
 
 using namespace std::string_view_literals;
 struct BenchmarkReportLabels {
@@ -73,7 +52,7 @@ public:
     BenchmarkReport();
     explicit BenchmarkReport(std::size_t cluster_count);
 
-    void add_query_report(std::string label, const QueryReport &report);
+    void add_query_report(std::string label, const rereuse::query::QueryReport &report);
 
     double skipped_cluster_percentage(std::size_t skipped) const noexcept;
 
