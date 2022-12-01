@@ -3,7 +3,7 @@
 //
 
 #include "arg_parser.h"
-#include "query_report.h"
+#include "benchmarking_report.h"
 
 #include <iostream>
 #include <random>
@@ -13,15 +13,47 @@
 #include "librereuse/db/regex_repository.h"
 #include "librereuse/db/regex_cluster_repository.h"
 #include "librereuse/query/match_query.h"
+#include "librereuse/query/query_report.h"
 
-static std::vector<QueryReport> measure_no_clusters(rereuse::db::RegexRepository &serial_repo, const std::unique_ptr<rereuse::query::BaseRegexQuery> &query, unsigned int count) {
-    std::vector<QueryReport> reports(count);
+static std::unordered_map<unsigned long, unsigned long>
+track_results_clusters(const std::unordered_set<std::string> &results, const rereuse::db::RegexClusterRepository &repo) {
+    std::unordered_map<unsigned long, unsigned long> cluster_frequency;
+    for (const auto &result : results) {
+        auto parent_cluster = repo.get_regex_cluster_idx(result);
+        if (parent_cluster) {
+            if (cluster_frequency.count(*parent_cluster) > 0) {
+                cluster_frequency[*parent_cluster] += 1;
+            } else {
+                cluster_frequency[*parent_cluster] = 1;
+            }
+        }
+    }
+
+    return cluster_frequency;
+}
+
+static rereuse::util::CSV
+cluster_info_to_csv(const std::unordered_map<unsigned long, unsigned long> &info) {
+    rereuse::util::CSV csv;
+    auto id_col = csv.push_col("Cluster Id");
+    auto freq_col = csv.push_col("Frequency");
+    for (const auto &[cluster_id, count] : info) {
+        auto row_idx = csv.push_row();
+        csv.cell(row_idx, id_col) << cluster_id;
+        csv.cell(row_idx, freq_col) << count;
+    }
+
+    return csv;
+}
+
+static std::vector<rereuse::query::QueryReport> measure_no_clusters(rereuse::db::RegexRepository &serial_repo, const std::unique_ptr<rereuse::query::BaseRegexQuery> &query, unsigned int count) {
+    std::vector<rereuse::query::QueryReport> reports(count);
     auto positive_count = dynamic_cast<rereuse::query::MatchQuery*>(query.get())->get_positive().size();
     auto negative_count = dynamic_cast<rereuse::query::MatchQuery*>(query.get())->get_negative().size();
 
     unsigned int i = 0;
     for (auto & it : reports) {
-        QueryReport report;
+        rereuse::query::QueryReport report;
 
         spdlog::stopwatch sw;
         spdlog::debug("Start serial query {}... {}", i, sw);
@@ -34,6 +66,7 @@ static std::vector<QueryReport> measure_no_clusters(rereuse::db::RegexRepository
         report.total_elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
         report.positive_examples_count = positive_count;
         report.negative_examples_count = negative_count;
+
         it = std::move(report);
         i++;
     }
@@ -41,24 +74,36 @@ static std::vector<QueryReport> measure_no_clusters(rereuse::db::RegexRepository
     return reports;
 }
 
-static std::vector<QueryReport> measure_clusters(const rereuse::db::RegexClusterRepository &repo, const std::unique_ptr<rereuse::query::BaseClusterQuery> &query, unsigned int count) {
-    std::vector<QueryReport> reports(count);
+static std::vector<rereuse::query::QueryReport> measure_clusters(const rereuse::db::RegexClusterRepository &repo, const std::unique_ptr<rereuse::query::BaseClusterQuery> &query, unsigned int count) {
+    std::vector<rereuse::query::QueryReport> reports(count);
     auto positive_count = dynamic_cast<rereuse::query::ClusterMatchQuery*>(query.get())->positive_examples_count();
     auto negative_count = dynamic_cast<rereuse::query::ClusterMatchQuery*>(query.get())->negative_examples_count();
     for (auto & it : reports) {
-        QueryReport report;
         spdlog::stopwatch sw;
         spdlog::info("Start measuring cluster query... {}", sw);
         auto start = std::chrono::high_resolution_clock::now();
-        auto results = repo.query(query, &report.skipped_clusters, &report.median_test_fail_time, &report.median_test_pass_time, &report.median_drill_time,
-                                  &report.average_vec_size);
+        auto results = repo.deep_query(query);
         auto end = std::chrono::high_resolution_clock::now();
         spdlog::info("Done... {:.3}", sw);
 
-        std::move(results.begin(), results.end(), std::inserter(report.results, report.results.begin()));
+        rereuse::query::QueryReport report(std::move(results));
         report.total_elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
         report.positive_examples_count = positive_count;
         report.negative_examples_count = negative_count;
+        report.result_cluster_info = track_results_clusters(report.results, repo);
+#if 0
+        unsigned long result_count = 0;
+        for (const auto &[_, cluster_count] : report.result_cluster_info)
+            result_count += cluster_count;
+
+        assert(result_count == report.result_count());
+#endif
+
+#if 0
+        auto csv = cluster_info_to_csv(report.result_cluster_info);
+        spdlog::info("INFO TAB");
+        std::cout << csv << std::endl;
+#endif
         it = std::move(report);
     };
 
