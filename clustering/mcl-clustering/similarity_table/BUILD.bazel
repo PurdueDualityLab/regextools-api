@@ -1,0 +1,8 @@
+filegroup(
+    name = "similarity_table_sources",
+    srcs = glob([
+        "*.cc",
+        "*.h",
+    ]),
+    visibility = ["//clustering/mcl-clustering:__pkg__"],
+)

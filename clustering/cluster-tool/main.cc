@@ -5,7 +5,7 @@
 #include <unordered_set>
 #include <string>
 #include "re2/re2.h"
-#include "src/egret.h" // TODO fix this in egret
+#include "egret/egret.h"
 #include <iostream>
 #include <random>
 #include <nlohmann/json.hpp>
