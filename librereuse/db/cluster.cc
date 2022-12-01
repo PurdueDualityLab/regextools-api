@@ -5,7 +5,7 @@
 #include "cluster.h"
 
 #include "spdlog/spdlog.h"
-#include "egret.h"
+#include "src/egret.h" // TODO fix this in egret
 
 rereuse::db::Cluster::Cluster(const std::unordered_set<std::string> &patterns)
         : size(0),

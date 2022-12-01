@@ -114,12 +114,17 @@ http_archive(
 )
 
 # egret - regex string generation, specifically our fork of the repo
-new_git_repository(
+# new_git_repository(
+#     name = "com_github_dualitylab_egret",
+#     build_file = "@//:third_party/egret.BUILD",
+#     commit = "e7dd6ccc6e833cb888c1ed258b2c0a32337a7458",
+#     remote = "git@github.com:PurdueDualityLab/egret.git",
+#     shallow_since = "1649083497 -0400",
+# )
+git_repository(
     name = "com_github_dualitylab_egret",
-    build_file = "@//:third_party/egret.BUILD",
-    commit = "e7dd6ccc6e833cb888c1ed258b2c0a32337a7458",
     remote = "git@github.com:PurdueDualityLab/egret.git",
-    shallow_since = "1649083497 -0400",
+    tag = "v0.1.0"
 )
 
 # Google test

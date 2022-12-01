@@ -6,7 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include <nlohmann/json.hpp>
-#include <egret.h>
+#include "src/egret.h" // TODO fix this in egret
 #include "arg_parser.h"
 #include "librereuse/db/pattern_reader.h"
 

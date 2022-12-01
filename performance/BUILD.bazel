@@ -12,9 +12,9 @@ filegroup(
 cc_binary(
     name = "benchmark",
     srcs = [
+        "benchmarking_report.cc",
+        "benchmarking_report.h",
         "main.cc",
-        "query_report.cc",
-        "query_report.h",
         ":args_parser_utils",
     ],
     deps = [
