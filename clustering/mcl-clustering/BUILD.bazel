@@ -1,9 +1,10 @@
 cc_binary(
-    name = "filter",
-    srcs = [
-        "arg_parser.cc",
-        "arg_parser.h",
-        "main.cc",
+    name = "mcl-clustering",
+    srcs = glob([
+        "*.cc",
+        "*.h",
+    ]) + [
+        "//clustering/mcl-clustering/similarity_table:similarity_table_sources",
     ],
     deps = [
         "//librereuse:rereuse",

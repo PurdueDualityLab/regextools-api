@@ -2,8 +2,8 @@
 // Created by charlie on 10/12/22.
 //
 
-#ifndef REGEXTOOLS_QUERY_REPORT_H
-#define REGEXTOOLS_QUERY_REPORT_H
+#ifndef REGEXTOOLS_BENCHMARKING_REPORT_H
+#define REGEXTOOLS_BENCHMARKING_REPORT_H
 
 #include <string>
 #include <chrono>
@@ -20,13 +20,16 @@
 using namespace std::string_view_literals;
 struct BenchmarkReportLabels {
 
-    static constexpr std::array<std::string_view, 10> categories = {
+    static constexpr std::array<std::string_view, 13> categories = {
             "Positive Examples"sv,
             "Negative Examples"sv,
             "Results"sv,
             "Skipped Clusters"sv,
             "Skipped Cluster Percentage"sv,
             "Average Positive Vector Size"sv,
+            "Distinct Result Clusters"sv,
+            "Remaining Clusters"sv,
+            "Cluster Hit Rate"sv,
             "Total Elapsed Time (ms)"sv,
             "Median Test Hit Time (ms)"sv,
             "Median Test Fail Time (ms)"sv,
@@ -55,6 +58,7 @@ public:
     void add_query_report(std::string label, const rereuse::query::QueryReport &report);
 
     double skipped_cluster_percentage(std::size_t skipped) const noexcept;
+    double cluster_hit_rate(const rereuse::query::QueryReport &report) const noexcept;
 
     friend std::ostream &operator<<(std::ostream &os, const BenchmarkReport &report);
 
@@ -63,6 +67,6 @@ private:
     rereuse::util::CSV csv;
 };
 
-QueryReport median_query_report(const std::vector<QueryReport> &reports);
+rereuse::query::QueryReport median_query_report(const std::vector<rereuse::query::QueryReport> &reports);
 
-#endif //REGEXTOOLS_QUERY_REPORT_H
+#endif //REGEXTOOLS_BENCHMARKING_REPORT_H

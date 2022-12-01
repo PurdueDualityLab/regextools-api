@@ -4,7 +4,7 @@
 
 #include <array>
 #include <string_view>
-#include "query_report.h"
+#include "benchmarking_report.h"
 #include "librereuse/util/stats.h"
 
 
@@ -33,7 +33,7 @@ double to_ms_double(const DurationTp &duration) {
     return ms.count();
 }
 
-void BenchmarkReport::add_query_report(std::string label, const QueryReport &report) {
+void BenchmarkReport::add_query_report(std::string label, const rereuse::query::QueryReport &report) {
     auto col_idx = this->csv.push_col(std::move(label));
     this->csv.cell(BenchmarkReportLabels::key_idx("Positive Examples"sv), col_idx) << report.positive_examples_count;
     this->csv.cell(BenchmarkReportLabels::key_idx("Negative Examples"sv), col_idx) << report.negative_examples_count;
@@ -41,6 +41,9 @@ void BenchmarkReport::add_query_report(std::string label, const QueryReport &rep
     this->csv.cell(BenchmarkReportLabels::key_idx("Skipped Clusters"sv), col_idx) << report.skipped_clusters;
     this->csv.cell(BenchmarkReportLabels::key_idx("Skipped Cluster Percentage"sv), col_idx) << this->skipped_cluster_percentage(report.skipped_clusters);
     this->csv.cell(BenchmarkReportLabels::key_idx("Average Positive Vector Size"sv), col_idx) << report.average_vec_size;
+    this->csv.cell(BenchmarkReportLabels::key_idx("Distinct Result Clusters"sv), col_idx) << report.result_cluster_info.size();
+    this->csv.cell(BenchmarkReportLabels::key_idx("Remaining Clusters"sv), col_idx) << ((this->cluster_count > 0) ? this->cluster_count - report.skipped_clusters : 0);
+    this->csv.cell(BenchmarkReportLabels::key_idx("Cluster Hit Rate"sv), col_idx) << this->cluster_hit_rate(report);
 #if 0
     this->csv.cell(BenchmarkReportLabels::key_idx("Total Elapsed Time (ms)"sv), col_idx) << report.total_elapsed_time.count();
     this->csv.cell(BenchmarkReportLabels::key_idx("Median Test Time (us)"sv), col_idx) << report.median_test_time().count();
@@ -66,7 +69,12 @@ double BenchmarkReport::skipped_cluster_percentage(std::size_t skipped) const no
     }
 }
 
-QueryReport median_query_report(const std::vector<QueryReport> &reports) {
+double BenchmarkReport::cluster_hit_rate(const rereuse::query::QueryReport &report) const noexcept {
+    auto remaining_clusters = this->cluster_count - report.skipped_clusters;
+    return static_cast<double>(report.result_cluster_info.size()) / static_cast<double>(remaining_clusters);
+}
+
+rereuse::query::QueryReport median_query_report(const std::vector<rereuse::query::QueryReport> &reports) {
     std::vector<std::chrono::milliseconds> total_elapsed_times;
     std::vector<std::chrono::microseconds> test_pass_times;
     std::vector<std::chrono::microseconds> test_fail_times;
@@ -78,7 +86,7 @@ QueryReport median_query_report(const std::vector<QueryReport> &reports) {
         drill_times.push_back(report.median_drill_time);
     }
 
-    QueryReport median_report(reports[0]);
+    rereuse::query::QueryReport median_report(reports[0]);
 
     median_report.total_elapsed_time = rereuse::util::median_duration(total_elapsed_times.cbegin(), total_elapsed_times.cend());
     median_report.median_test_pass_time = rereuse::util::median_duration(test_pass_times.cbegin(),

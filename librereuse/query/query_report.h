@@ -9,6 +9,7 @@
 #include <unordered_set>
 #include <string>
 #include <utility>
+#include <unordered_map>
 
 namespace rereuse::query {
 
@@ -17,13 +18,7 @@ namespace rereuse::query {
                     const std::chrono::microseconds &medianTestFailTime,
                     const std::chrono::microseconds &medianTestPassTime,
                     const std::chrono::microseconds &medianDrillTime,
-                    double averageMatchVectorSize)
-        : results(std::move(results))
-        , skipped_clusters(skippedClusters)
-        , median_test_fail_time(medianTestFailTime)
-        , median_test_pass_time(medianTestPassTime)
-        , median_drill_time(medianDrillTime)
-        , average_match_vector_size(averageMatchVectorSize) {}
+                    double averageMatchVectorSize);
 
         std::unordered_set<std::string> results;
         unsigned long skipped_clusters;
@@ -34,37 +29,11 @@ namespace rereuse::query {
     };
 
     struct QueryReport {
-        QueryReport(const QueryResult &result)
-        : results(result.results)
-        , positive_examples_count(0)
-        , negative_examples_count(0)
-        , skipped_clusters(result.skipped_clusters)
-        , total_elapsed_time()
-        , median_test_pass_time(result.median_test_pass_time)
-        , median_test_fail_time(result.median_test_fail_time)
-        , median_drill_time(result.median_drill_time)
-        , average_vec_size(result.average_match_vector_size)
-        {}
+        QueryReport(const QueryResult &result);
 
-        QueryReport(QueryResult &&result)
-                : results(std::move(result.results))
-                , positive_examples_count(0)
-                , negative_examples_count(0)
-                , skipped_clusters(result.skipped_clusters)
-                , total_elapsed_time()
-                , median_test_pass_time(result.median_test_pass_time)
-                , median_test_fail_time(result.median_test_fail_time)
-                , median_drill_time(result.median_drill_time)
-                , average_vec_size(result.average_match_vector_size)
-        {}
+        QueryReport(QueryResult &&result);
 
-        QueryReport()
-                : positive_examples_count(0)
-                , negative_examples_count(0)
-                , skipped_clusters(0)
-                , total_elapsed_time()
-                , average_vec_size(0)
-        {}
+        explicit QueryReport();
 
         unsigned long result_count() const { return results.size(); }
 
@@ -77,6 +46,7 @@ namespace rereuse::query {
         std::chrono::microseconds median_test_fail_time{};
         std::chrono::microseconds median_drill_time{};
         double average_vec_size;
+        std::unordered_map<unsigned long, unsigned long> result_cluster_info;
     };
 }
 
