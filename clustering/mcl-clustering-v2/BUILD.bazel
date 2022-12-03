@@ -11,7 +11,6 @@ cc_binary(
     deps = [
         "//librereuse:rereuse",
         "@com_gabime_spdlog//:spdlog",
-        "@com_github_dualitylab_egret//src:egret-lib",
         "@com_github_nlohmann_json//:json",
         "@com_googlesource_code_re2//:re2",
     ],
