@@ -25,6 +25,7 @@ public:
     void compute() {
         for (unsigned long row = 0; row < scorers.size(); row++) {
             auto base_scorer = this->scorers[row];
+            spdlog::info("Starting scoring for {}...", row);
             for (unsigned long col = 0; col < scorers.size(); col++) {
                 // Diagonal matrix
                 if (row == col) {
@@ -35,7 +36,9 @@ public:
                 // Compute the score between the two
                 auto other_scorer = this->scorers[col];
                 this->scores[row][col] = base_scorer.score(other_scorer);
+                spdlog::debug("Scored ({},{})", row, col);
             }
+            spdlog::info("Finished scoring for {}", row);
         }
     }
 

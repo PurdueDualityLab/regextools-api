@@ -4,11 +4,14 @@
 
 #include <iostream>
 #include <filesystem>
+#include <spdlog/spdlog.h>
 #include "librereuse/db/pattern_reader.h"
 #include "./better_similarity_table/rex_similarity_scorer.h"
 #include "./better_similarity_table/similarity_table.h"
 
 int main(int argc, char **argv) {
+
+    spdlog::set_level(spdlog::level::debug);
 
     if (argc < 2) {
         std::cerr << "usage: mcl-clustering-v2 <regex objects path>" << std::endl;
@@ -25,7 +28,14 @@ int main(int argc, char **argv) {
     unsigned long id = 0;
     std::vector<RexSimilarityScorer> scorers;
     for (const auto &regex : regexes) {
-        scorers.emplace_back(regex, id++, wrapper);
+        try {
+            RexSimilarityScorer scorer(regex, id, wrapper);
+            scorers.push_back(std::move(scorer));
+            id++;
+        } catch (std::runtime_error &err) {
+            // std::cerr << "Skipping "
+            spdlog::warn("Skipping regex /{}/: {}", regex, err.what());
+        }
     }
 
     SimilarityTable<RexSimilarityScorer> similarity_table(std::move(scorers));
