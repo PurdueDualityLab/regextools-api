@@ -4,10 +4,12 @@ cc_binary(
         "*.cc",
         "*.h",
     ]) + [
-        "//clustering/mcl-clustering/similarity_table:similarity_table_sources",
+        # "//clustering/mcl-clustering/similarity_table:similarity_table_sources",
+        "//clustering/mcl-clustering/better_similarity_table:better_similarity_table",
     ],
     deps = [
         "//librereuse:rereuse",
+        "@com_gabime_spdlog//:spdlog",
         "@com_github_dualitylab_egret//src:egret-lib",
         "@com_github_nlohmann_json//:json",
         "@com_googlesource_code_re2//:re2",

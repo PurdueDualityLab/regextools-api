@@ -68,7 +68,7 @@ SimilarityTable::~SimilarityTable() {
 void SimilarityTable::to_similarity_graph() {
     std::vector<std::vector<double>> half_matrix(this->scorers.size());
     for (int row = 0; row < this->scores.size(); row++) {
-        half_matrix[row] = std::move(std::vector<double>(row + 1));
+        half_matrix[row] = std::vector<double>(row + 1);
         for (int col = 0; col <= row; col++) {
             double average = (this->scores[row][col] + this->scores[col][row]) / 2.0;
             // this->scores[row][col] = average;

@@ -13,6 +13,7 @@
 #include <unordered_map>
 #include <optional>
 #include <getopt.h>
+#include <spdlog/spdlog.h>
 #include "re2/re2.h"
 
 static int help;
@@ -206,6 +207,8 @@ int main(int argc, char **argv) {
         }
     }
 
+    spdlog::info("Loaded {} patterns", patterns.size());
+
     MclWrapper mcl_wrapper(ProgramOptions::instance().mcl_path);
 
     // build the similarity table, but don't actually compute it
@@ -230,7 +233,9 @@ int main(int argc, char **argv) {
         };
     }
 
+    spdlog::info("Starting to build out similarity table...");
     SimilarityTable table(patterns, ProgramOptions::instance().workers, scorer_constructor, !ProgramOptions::instance().existing_graph_path.has_value());
+    spdlog::info("Similarity table built");
 
     // If an existing graph is passed, then skip generating the similarity table
     if (!ProgramOptions::instance().existing_graph_path) {

@@ -1,0 +1,18 @@
+cc_binary(
+    name = "mcl-clustering-v2",
+    srcs = [
+        "main.cc",
+        "rex_wrapper.cc",
+        "rex_wrapper.h",
+        "string_file_registry.cc",
+        "string_file_registry.h",
+        "//clustering/mcl-clustering-v2/better_similarity_table",
+    ],
+    deps = [
+        "//librereuse:rereuse",
+        "@com_gabime_spdlog//:spdlog",
+        "@com_github_dualitylab_egret//src:egret-lib",
+        "@com_github_nlohmann_json//:json",
+        "@com_googlesource_code_re2//:re2",
+    ],
+)

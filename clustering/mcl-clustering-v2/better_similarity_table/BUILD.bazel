@@ -1,0 +1,9 @@
+filegroup(
+    name = "better_similarity_table",
+    srcs = [
+        "rex_similarity_scorer.cc",
+        "rex_similarity_scorer.h",
+        "similarity_table.h",
+    ],
+    visibility = ["//clustering/mcl-clustering-v2:__pkg__"],
+)

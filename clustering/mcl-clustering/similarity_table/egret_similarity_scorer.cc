@@ -6,7 +6,7 @@
 
 #include <utility>
 
-#include "src/egret.h"
+#include "egret/egret.h"
 
 EgretSimilarityScorer::EgretSimilarityScorer(std::string pattern, unsigned long id)
 : BaseSimilarityScorer(std::move(pattern), id) {
