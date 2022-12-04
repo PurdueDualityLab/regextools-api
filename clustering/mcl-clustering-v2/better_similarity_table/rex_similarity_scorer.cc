@@ -50,10 +50,19 @@ RexSimilarityScorer::RexSimilarityScorer(const std::string &pattern, unsigned lo
         strings_obj.push_back(str);
 
     // open a new file
-    std::filesystem::create_directory(std::filesystem::temp_directory_path() / "rex_strings");
+    std::error_code err;
+    bool result = std::filesystem::create_directory(std::filesystem::temp_directory_path() / "rex_strings", err);
+    if (!result) {
+        throw std::runtime_error("Could not create strings directory: " + err.message());
+    }
+
     this->string_file_path = std::filesystem::temp_directory_path() / "rex_strings" / ("rex_strings_" + std::to_string(random()) + ".json");
     std::ofstream strings_file(this->string_file_path);
+    if (!strings_file.is_open()) {
+        throw std::runtime_error("Could not create strings file");
+    }
     strings_file << strings_obj;
+    strings_file.flush();
 
     // Build a pattern for this regex
     re2::RE2 test_regex(pattern); // This should get dropped
