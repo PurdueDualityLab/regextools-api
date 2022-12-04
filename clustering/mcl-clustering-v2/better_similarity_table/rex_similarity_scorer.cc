@@ -11,6 +11,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #include <iostream>
+#include <spdlog/spdlog.h>
 
 // Shamelessly stolen from here: https://stackoverflow.com/a/2595226/9421263
 static inline void hash_combine(std::size_t& seed, const std::size_t &added_hash) {
@@ -94,6 +95,7 @@ std::vector<std::string> RexSimilarityScorer::load_strings() {
 }
 
 RexSimilarityScorer::~RexSimilarityScorer() {
+    spdlog::warn("RexSimilarityScorer: cleaning up strings file");
     std::filesystem::remove(this->string_file_path);
 }
 

@@ -26,10 +26,10 @@ int main(int argc, char **argv) {
 
     // Make scorers for everything
     unsigned long id = 0;
-    std::vector<RexSimilarityScorer> scorers;
+    std::vector<std::shared_ptr<RexSimilarityScorer>> scorers;
     for (const auto &regex : regexes) {
         try {
-            RexSimilarityScorer scorer(regex, id, wrapper);
+            auto scorer = std::make_shared<RexSimilarityScorer>(regex, id, wrapper);
             scorers.push_back(std::move(scorer));
             id++;
         } catch (std::runtime_error &err) {

@@ -11,7 +11,7 @@
 template <typename ScorerTp>
 class SimilarityTable {
 public:
-    explicit SimilarityTable(std::vector<ScorerTp> scorers) {
+    explicit SimilarityTable(std::vector<std::shared_ptr<ScorerTp>> scorers) {
         // Set up the score table
         this->scorers = std::move(scorers);
 
@@ -36,7 +36,7 @@ public:
 
                 // Compute the score between the two
                 auto other_scorer = this->scorers[col];
-                this->scores[row][col] = base_scorer.score(other_scorer);
+                this->scores[row][col] = base_scorer->score(*other_scorer);
                 spdlog::debug("Scored ({},{})", row, col);
             }
             spdlog::info("Finished scoring for {}", row);
@@ -65,7 +65,7 @@ public:
             for (int col_idx = 0; col_idx < row.size(); col_idx++) {
                 double score = row[col_idx];
                 if (score > 0) {
-                    abc_fstream << this->scorers[row_idx].get_id() << '\t' << this->scorers[col_idx].get_id() << '\t' << score << std::endl;
+                    abc_fstream << this->scorers[row_idx]->get_id() << '\t' << this->scorers[col_idx]->get_id() << '\t' << score << std::endl;
                 }
             }
         }
@@ -77,7 +77,7 @@ public:
 
 private:
     std::vector<std::vector<double>> scores;
-    std::vector<ScorerTp> scorers;
+    std::vector<std::shared_ptr<ScorerTp>> scorers;
 };
 
 
