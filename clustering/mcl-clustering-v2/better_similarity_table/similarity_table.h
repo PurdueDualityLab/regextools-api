@@ -16,8 +16,9 @@ public:
         this->scorers = std::move(scorers);
 
         // Fill out the scorer table
-        for (unsigned long idx = 0; idx < scorers.size(); idx++) {
-            this->scores.template emplace_back(scorers.size(), 0);
+        for (unsigned long idx = 0; idx < this->scorers.size(); idx++) {
+            std::vector<double> row(this->scorers.size());
+            this->scores.push_back(std::move(row));
         }
     }
 

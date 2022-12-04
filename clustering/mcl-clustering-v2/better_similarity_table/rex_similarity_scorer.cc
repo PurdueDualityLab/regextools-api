@@ -50,6 +50,7 @@ RexSimilarityScorer::RexSimilarityScorer(const std::string &pattern, unsigned lo
         strings_obj.push_back(str);
 
     // open a new file
+    std::filesystem::create_directory(std::filesystem::temp_directory_path() / "rex_strings");
     this->string_file_path = std::filesystem::temp_directory_path() / "rex_strings" / ("rex_strings_" + std::to_string(random()) + ".json");
     std::ofstream strings_file(this->string_file_path);
     strings_file << strings_obj;
