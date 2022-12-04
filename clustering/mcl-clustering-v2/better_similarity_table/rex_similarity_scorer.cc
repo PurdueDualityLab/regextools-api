@@ -53,7 +53,7 @@ RexSimilarityScorer::RexSimilarityScorer(const std::string &pattern, unsigned lo
     auto rex_strings_path = std::filesystem::temp_directory_path() / "rex_strings";
     std::error_code err;
     bool result = std::filesystem::create_directories(rex_strings_path, err);
-    if (!result) {
+    if (!result && err) {
         throw std::runtime_error("Could not create strings directory: " + err.message());
     }
 
