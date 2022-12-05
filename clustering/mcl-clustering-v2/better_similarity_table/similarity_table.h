@@ -9,7 +9,8 @@
 #include <string>
 #include <thread>
 #include <memory>
-#include <threadpool/ThreadPool.h>
+// #include <threadpool/ThreadPool.h>
+#include "misc/ThreadPool.h"
 
 #define CONCURRENT_COMPUTE 1
 
@@ -72,11 +73,33 @@ public:
     }
 #else
     void compute() {
+        auto score_lambda = [](std::size_t row_idx, std::shared_ptr<ScorerTp> base, std::vector<std::shared_ptr<ScorerTp>> row) -> std::pair<std::size_t, std::vector<double>> {
+            std::stringstream ss;
+            ss << std::this_thread::get_id();
+            auto thread_id = ss.str();
+            spdlog::info("{}: Starting scoring row {}...", thread_id, row_idx);
+            std::vector<double> row_scores(row.size());
+            std::size_t idx = 0;
+            for (const auto &entry : row) {
+                if (entry->get_id() == base->get_id()) {
+                    row_scores[idx++] = 1;
+                    continue;
+                }
+
+                row_scores[idx++] = base->score(*entry);
+                spdlog::debug("{}: scored ({},{})", thread_id, row_idx, idx);
+            }
+
+            spdlog::info("{}: Scored row {}.", thread_id, row_idx);
+
+            return {row_idx, row_scores};
+        };
+
         ThreadPool tp(8);
         std::vector<std::future<std::pair<std::size_t, std::vector<double>>>> tasks;
         std::size_t idx = 0;
         for (const auto &scorer : this->scorers) {
-            auto task = tp.template enqueue(score_row, idx++, scorer, this->scorers);
+            auto task = tp.template enqueue(score_lambda, idx++, scorer, this->scorers);
             tasks.push_back(std::move(task));
         }
 

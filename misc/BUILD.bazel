@@ -23,3 +23,11 @@ cc_binary(
         "@com_github_nlohmann_json//:json",
     ],
 )
+
+cc_library(
+    name = "threadpool",
+    srcs = ["ThreadPool.h"],
+    include_prefix = "threadpool",
+    visibility = ["//visibility:public"],
+    deps = [],
+)

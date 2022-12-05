@@ -114,15 +114,15 @@ http_archive(
 )
 
 # egret - regex string generation, specifically our fork of the repo
-git_repository(
-    name = "com_github_dualitylab_egret",
-    remote = "git@github.com:PurdueDualityLab/egret.git",
-    tag = "v0.2.0",
-)
-# local_repository(
+# git_repository(
 #     name = "com_github_dualitylab_egret",
-#     path = "../egret",
+#     remote = "git@github.com:PurdueDualityLab/egret.git",
+#     tag = "v0.2.1",
 # )
+local_repository(
+    name = "com_github_dualitylab_egret",
+    path = "../egret",
+)
 
 # Google test
 http_archive(

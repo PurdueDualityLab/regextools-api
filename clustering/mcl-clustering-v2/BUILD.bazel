@@ -12,7 +12,8 @@ cc_binary(
         "//librereuse:rereuse",
         "@com_gabime_spdlog//:spdlog",
         "@com_github_nlohmann_json//:json",
-        "@com_github_progschj_threadpool//:threadpool",
+        # "@com_github_progschj_threadpool//:threadpool",
+        "//misc:threadpool",
         "@com_googlesource_code_re2//:re2",
     ],
 )
