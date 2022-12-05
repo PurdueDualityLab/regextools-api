@@ -26,6 +26,10 @@ int main(int argc, char **argv) {
 
     // Make scorers for everything
     unsigned long id = 0;
+    // NOTE the shared_ptr here is very deliberate. This is to ensure that the string's file associated with the
+    // object doesn't get cleaned up. When moving, the original delete constructor will get called, and so the
+    // strings file gets cleaned up. The better thing to do is to manually add in ref counting to the object and only
+    // delete the strings file once the ref count hits zero
     std::vector<std::shared_ptr<RexSimilarityScorer>> scorers;
     for (const auto &regex : regexes) {
         try {
