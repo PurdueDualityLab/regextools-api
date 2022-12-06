@@ -13,8 +13,8 @@ int main(int argc, char **argv) {
 
     spdlog::set_level(spdlog::level::debug);
 
-    if (argc < 2) {
-        std::cerr << "usage: mcl-clustering-v2 <regex objects path>" << std::endl;
+    if (argc < 3) {
+        std::cerr << "usage: mcl-clustering-v2 <regex objects path> <output clusters path>" << std::endl;
         return 1;
     }
 
@@ -43,7 +43,7 @@ int main(int argc, char **argv) {
         }
     }
 #else
-    std::atomic<std::size_t> id;
+    std::atomic<std::size_t> id(0);
     std::vector<std::future<std::shared_ptr<RexSimilarityScorer>>> tasks;
     ThreadPool tp(8);
     for (const auto &regex : regexes) {
@@ -70,8 +70,8 @@ int main(int argc, char **argv) {
     similarity_table.compute();
     similarity_table.to_similarity_graph();
 
-    std::string output = "clusters.abc";
-    similarity_table.to_abc(output);
+    // std::string output = "clusters-small.abc";
+    similarity_table.to_abc(argv[2]);
 
     return 0;
 }
