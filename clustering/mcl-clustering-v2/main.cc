@@ -69,6 +69,7 @@ int main(int argc, char **argv) {
     SimilarityTable<RexSimilarityScorer> similarity_table(std::move(scorers));
     similarity_table.compute();
     similarity_table.to_similarity_graph();
+    similarity_table.top_k_edges(83);
 
     // std::string output = "clusters-small.abc";
     similarity_table.to_abc(argv[2]);

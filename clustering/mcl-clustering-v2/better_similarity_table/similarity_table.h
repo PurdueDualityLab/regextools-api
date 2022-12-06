@@ -143,6 +143,37 @@ public:
         return abc_graph_output;
     }
 
+    void SimilarityTable::top_k_edges(unsigned int edges) {
+        for (auto &row : this->scores) {
+            // If there aren't enough edges, continue
+            if (row.size() <= edges)
+                continue;
+
+            // Make an enumeration of all the outgoing edges
+            std::vector<std::pair<unsigned int, double>> indexed_scores;
+            unsigned int index = 0;
+            std::transform(row.cbegin(), row.cend(), std::back_inserter(indexed_scores),
+                           [&index](double score) -> std::pair<unsigned int, double> { return { index++, score }; });
+
+            auto score_comparer = [](const std::pair<unsigned int, double> &left, const std::pair<unsigned int, double> &right) {
+                return left.second > right.second;
+            };
+            std::priority_queue<
+                    std::pair<unsigned int, double>,
+                    std::vector<std::pair<unsigned int, double>>,
+                    decltype(score_comparer)
+            > ordered_indexed_scores(score_comparer, indexed_scores);
+
+            // Remove small edges until this row only has edges number of edges
+            while (ordered_indexed_scores.size() > edges) {
+                auto top = ordered_indexed_scores.top();
+                ordered_indexed_scores.pop();
+                auto idx = top.first;
+                row[idx] = 0;
+            }
+        }
+    }
+
 private:
     std::vector<std::vector<double>> scores;
     std::vector<std::shared_ptr<ScorerTp>> scorers;
