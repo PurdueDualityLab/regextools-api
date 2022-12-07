@@ -204,6 +204,13 @@ def go_dependencies():
         version = "v1.0.2",
     )
     go_repository(
+        name = "com_github_patrickmn_go_cache",
+        importpath = "github.com/patrickmn/go-cache",
+        sum = "h1:HRMgzkcYKYpi3C8ajMPV8OFXaaRUnok+kx1WdO15EQc=",
+        version = "v2.1.0+incompatible",
+    )
+
+    go_repository(
         name = "com_github_pelletier_go_toml_v2",
         importpath = "github.com/pelletier/go-toml/v2",
         sum = "h1:h9JoA60e1dVEOpp0PFwJSmt1Htu057NUq9/bUwaO61s=",

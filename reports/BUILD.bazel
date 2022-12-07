@@ -10,7 +10,6 @@ py_binary(
     ],
 )
 
-
 py_binary(
     name = "small-memory-hist",
     srcs = ["small-memory-hist.py"],

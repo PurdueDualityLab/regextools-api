@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/regextools/protos/query_service"
 	"golang.org/x/net/context"
 	"net/http"
 	"os"
@@ -10,8 +11,41 @@ import (
 )
 
 type QueryRequest struct {
-	Positive []string `json:"positive"`
-	Negative []string `json:"negative"`
+	Positive    []string     `json:"positive"`
+	Negative    []string     `json:"negative"`
+	PageRequest *PageRequest `json:"pageRequest,omitempty"`
+}
+
+type QueryResponse struct {
+	Results   []string `json:"results"`
+	Total     uint64   `json:"total"`
+	CacheKey  string   `json:"cacheKey"`
+	PageSize  uint64   `json:"pageSize"`
+	PageNum   uint64   `json:"pageNum"`
+	PageCount uint64   `json:"pageCount"`
+}
+
+func makeQueryResponse(results *query_service.QueryResults, cacheKey string, request QueryRequest, pageCount uint64) QueryResponse {
+	if request.PageRequest != nil {
+		return QueryResponse{
+			Results:  results.Results,
+			Total:    results.Total,
+			PageSize: request.PageRequest.PageSize,
+			// PageSize:  uint64(len(results.Results)),
+			PageNum:   request.PageRequest.PageNum,
+			CacheKey:  cacheKey,
+			PageCount: pageCount,
+		}
+	} else {
+		return QueryResponse{
+			Results:   results.Results,
+			Total:     results.Total,
+			PageSize:  results.Total,
+			PageNum:   0,
+			CacheKey:  cacheKey,
+			PageCount: 1,
+		}
+	}
 }
 
 func getRegexDBString(defaultHost string, defaultPort int) (string, error) {
@@ -36,8 +70,39 @@ func getRegexDBString(defaultHost string, defaultPort int) (string, error) {
 	return fmt.Sprintf("%s:%d", envHost, envPort), nil
 }
 
-func QueryHandler(netCtx context.Context) gin.HandlerFunc {
+func QueryHandler(netCtx context.Context, resultTable *ResultTable) gin.HandlerFunc {
+
 	fn := func(ctx *gin.Context) {
+
+		var request QueryRequest
+		if err := ctx.ShouldBindJSON(&request); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
+			return
+		}
+
+		// If a cache key is provided, we need to do some stuff
+		if request.PageRequest != nil {
+			if len(request.PageRequest.CacheKey) == 0 {
+				// do nothing. We still have the paging stuff here so that we can still page off the bat
+			} else if HashQuery(request) != request.PageRequest.CacheKey && len(request.Positive) > 0 && len(request.Negative) > 0 {
+				// If the request and the key are different, we should invalidate the old result
+				resultTable.InvalidateResults(request.PageRequest.CacheKey)
+				// keep going -- don't return
+			} else {
+				// The query has not changed, so we can get these results
+				results, pageCount, err := resultTable.FetchResultsWithPage(*request.PageRequest)
+				if err != nil {
+					// TODO error handling
+					ctx.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
+					return
+				}
+
+				response := makeQueryResponse(results, request.PageRequest.CacheKey, request, pageCount)
+				ctx.JSON(http.StatusOK, response)
+				return
+			}
+		}
+
 		connStr, err := getRegexDBString("0.0.0.0", 50051)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"msg": err.Error()})
@@ -51,24 +116,31 @@ func QueryHandler(netCtx context.Context) gin.HandlerFunc {
 		}
 		defer client.Close()
 
-		var request QueryRequest
-		if err = ctx.ShouldBindJSON(&request); err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
-			return
-		}
-
 		results, err := client.Query(request.Positive, request.Negative)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
 			return
 		}
 
-		if results.Total == 0 {
-			ctx.JSON(http.StatusOK, gin.H{"results": []string{}, "total": 0})
-			return
+		// Cache the results
+		cacheKey := resultTable.CacheResults(request, results)
+
+		// If there is a page request, fulfill that
+		var totalPages uint64 = 1
+		if request.PageRequest != nil {
+			request.PageRequest.CacheKey = cacheKey
+
+			results, totalPages, err = resultTable.FetchResultsWithPage(*request.PageRequest)
+			if err != nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
+				return
+			}
 		}
 
-		ctx.JSON(http.StatusOK, results)
+		// cache the results
+		response := makeQueryResponse(results, cacheKey, request, totalPages)
+
+		ctx.JSON(http.StatusOK, response)
 	}
 
 	return fn
