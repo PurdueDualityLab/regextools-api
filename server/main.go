@@ -12,10 +12,11 @@ func main() {
 
 	ctx := context.Background()
 	resultTable := NewResultTable()
+	tracker := NewParticipantTracker()
 
 	router := gin.Default()
 	router.Use(cors.Default())
-	router.POST("/query", QueryHandler(ctx, resultTable))
+	router.POST("/query", QueryHandler(ctx, resultTable, tracker))
 
 	err = router.Run()
 	if err != nil {

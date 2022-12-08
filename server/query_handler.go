@@ -28,10 +28,9 @@ type QueryResponse struct {
 func makeQueryResponse(results *query_service.QueryResults, cacheKey string, request QueryRequest, pageCount uint64) QueryResponse {
 	if request.PageRequest != nil {
 		return QueryResponse{
-			Results:  results.Results,
-			Total:    results.Total,
-			PageSize: request.PageRequest.PageSize,
-			// PageSize:  uint64(len(results.Results)),
+			Results:   results.Results,
+			Total:     results.Total,
+			PageSize:  request.PageRequest.PageSize,
 			PageNum:   request.PageRequest.PageNum,
 			CacheKey:  cacheKey,
 			PageCount: pageCount,
@@ -70,7 +69,14 @@ func getRegexDBString(defaultHost string, defaultPort int) (string, error) {
 	return fmt.Sprintf("%s:%d", envHost, envPort), nil
 }
 
-func QueryHandler(netCtx context.Context, resultTable *ResultTable) gin.HandlerFunc {
+func shouldTrack(ctx *gin.Context) (string, string, bool) {
+	participantId, hasParticipantId := ctx.GetQuery("participantId")
+	taskId, hasTaskId := ctx.GetQuery("taskId")
+
+	return participantId, taskId, hasParticipantId && hasTaskId
+}
+
+func QueryHandler(netCtx context.Context, resultTable *ResultTable, tracker *ParticipantTracker) gin.HandlerFunc {
 
 	fn := func(ctx *gin.Context) {
 
@@ -139,6 +145,21 @@ func QueryHandler(netCtx context.Context, resultTable *ResultTable) gin.HandlerF
 
 		// cache the results
 		response := makeQueryResponse(results, cacheKey, request, totalPages)
+
+		// track the response if there are query parameters
+		if participantId, taskId, areSet := shouldTrack(ctx); areSet {
+			taskIdNum, err := strconv.Atoi(taskId)
+			if err != nil {
+				// TODO handle error
+				ctx.JSON(http.StatusBadRequest, gin.H{"msg": "taskId must be a valid number"})
+				return
+			}
+			err = tracker.StoreQuery(participantId, uint32(taskIdNum), request)
+			if err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "Error while tracking participant info: " + err.Error()})
+				return
+			}
+		}
 
 		ctx.JSON(http.StatusOK, response)
 	}
