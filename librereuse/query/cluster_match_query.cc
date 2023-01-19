@@ -15,7 +15,7 @@ rereuse::query::ClusterMatchQuery::ClusterMatchQuery(std::unordered_set<std::str
                                                        negative(std::move(negative)) {
 }
 
-std::unordered_set<std::string>
+std::vector<rereuse::db::RegexEntity>
 rereuse::query::ClusterMatchQuery::query(const std::shared_ptr<rereuse::db::Cluster> &cluster, std::chrono::microseconds *duration, double *average_match_vector_length) {
 
     auto &set = cluster->get_regex_set();
@@ -58,11 +58,11 @@ rereuse::query::ClusterMatchQuery::query(const std::shared_ptr<rereuse::db::Clus
     }
     auto end = std::chrono::high_resolution_clock::now();
 
-    std::unordered_set<std::string> patterns;
-    auto cluster_patterns = cluster->get_patterns();
+    std::vector<db::RegexEntity> entities;
+    auto cluster_patterns = cluster->get_entities();
     for (unsigned long idx = 0; idx < matching_regexes.size(); idx++) {
         if (matching_regexes.get(idx)) {
-            patterns.insert(cluster_patterns.at(idx));
+            entities.push_back(cluster_patterns.at(idx));
         }
     }
 
@@ -75,7 +75,7 @@ rereuse::query::ClusterMatchQuery::query(const std::shared_ptr<rereuse::db::Clus
         *average_match_vector_length = rereuse::util::mean(vector_lengths.cbegin(), vector_lengths.cend());
     }
 
-    return patterns;
+    return entities;
 }
 
 bool rereuse::query::ClusterMatchQuery::test(const std::shared_ptr<rereuse::db::Cluster> &cluster, std::chrono::microseconds *duration) {

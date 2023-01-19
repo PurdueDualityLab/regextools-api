@@ -16,7 +16,7 @@ int main(int argc, char **argv) {
     }
 
     auto input_clusters = rereuse::db::read_semantic_clusters(argv[1]);
-    auto cluster_size = input_clusters.front()->get_patterns().size();
+    auto cluster_size = input_clusters.front()->get_entities().size();
 
     auto patterns = rereuse::db::unpack_patterns(input_clusters);
 
@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
 
     nlohmann::json randomized_cluster_patterns;
     for (const auto &cluster : randomized_clusters) {
-        auto cluster_patterns = cluster->get_patterns();
+        auto cluster_patterns = cluster->get_entities();
         randomized_cluster_patterns.push_back(std::move(cluster_patterns));
     }
 

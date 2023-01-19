@@ -4,7 +4,7 @@
 
 #include "query_report.h"
 
-rereuse::query::QueryResult::QueryResult(std::unordered_set<std::string> results, unsigned long skippedClusters,
+rereuse::query::QueryResult::QueryResult(std::vector<db::RegexEntity> results, unsigned long skippedClusters,
                                          const std::chrono::microseconds &medianTestFailTime,
                                          const std::chrono::microseconds &medianTestPassTime,
                                          const std::chrono::microseconds &medianDrillTime,

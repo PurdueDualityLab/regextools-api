@@ -12,17 +12,19 @@
 #include "re2/re2.h"
 #include "re2/set.h"
 
+#include "regex_entity.h"
+
 namespace rereuse::db {
     class Cluster {
     public:
         explicit Cluster();
-        explicit Cluster(const std::unordered_set<std::string>& patterns);
+        explicit Cluster(const std::unordered_set<RegexEntity>& entities);
 
-        bool add_pattern(const std::string &pattern);
+        bool add_entity(const RegexEntity &entity);
         bool compile(bool eager = false);
         int get_size() const { return this->size; }
         bool is_compiled() const { return this->set_is_compiled; }
-        std::vector<std::string> &get_patterns() { return this->patterns; }
+        std::vector<RegexEntity> &get_entities() { return this->patterns; }
         /**
          * Primes the set cache for this specific cluster, improving performance
          */
@@ -34,7 +36,7 @@ namespace rereuse::db {
         int size;
         bool set_is_compiled;
         std::unique_ptr<re2::RE2::Set> regex_set;
-        std::vector<std::string> patterns;
+        std::vector<RegexEntity> patterns;
     };
 }
 

@@ -20,9 +20,8 @@ namespace rereuse::db {
      */
     class RegexClusterRepository {
     public:
-        explicit RegexClusterRepository();
-        explicit RegexClusterRepository(int maxClusterSize, const std::unordered_set<std::string> &patterns);
-        explicit RegexClusterRepository(int maxClusterSize, const std::string& path);
+        RegexClusterRepository();
+        explicit RegexClusterRepository(int maxClusterSize, const std::vector<RegexEntity> &entities);
 
         virtual ~RegexClusterRepository() = default;
 
@@ -37,10 +36,10 @@ namespace rereuse::db {
 
         std::optional<unsigned long> get_regex_cluster_idx(const std::string &pattern) const;
 
-        virtual std::unordered_set<std::string>
+        virtual std::vector<RegexEntity>
         query(const std::unique_ptr<rereuse::query::BaseClusterQuery> &query) const {
             auto result = this->deep_query(query);
-            return std::move(result.results);
+            return result.results;
         }
 
         query::QueryResult

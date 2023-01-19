@@ -10,17 +10,20 @@
 #include <string>
 #include <utility>
 #include <unordered_map>
+#include <vector>
+
+#include "../db/regex_entity.h"
 
 namespace rereuse::query {
 
     struct QueryResult {
-        QueryResult(std::unordered_set<std::string> results, unsigned long skippedClusters,
+        QueryResult(std::vector<db::RegexEntity> results, unsigned long skippedClusters,
                     const std::chrono::microseconds &medianTestFailTime,
                     const std::chrono::microseconds &medianTestPassTime,
                     const std::chrono::microseconds &medianDrillTime,
                     double averageMatchVectorSize);
 
-        std::unordered_set<std::string> results;
+        std::vector<db::RegexEntity> results;
         unsigned long skipped_clusters;
         std::chrono::microseconds median_test_fail_time;
         std::chrono::microseconds median_test_pass_time;
@@ -37,7 +40,7 @@ namespace rereuse::query {
 
         unsigned long result_count() const { return results.size(); }
 
-        std::unordered_set<std::string> results;
+        std::vector<db::RegexEntity> results;
         std::size_t positive_examples_count;
         std::size_t negative_examples_count;
         unsigned long skipped_clusters;

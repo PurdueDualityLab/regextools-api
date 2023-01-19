@@ -193,7 +193,7 @@ int main(int argc, char **argv) {
         auto clusters = rereuse::db::read_semantic_clusters(ProgramOptions::instance().corpus_file);
         unsigned long id = 0;
         for (auto &cluster : clusters) {
-            for (auto &pattern : cluster->get_patterns()) {
+            for (auto &pattern : cluster->get_entities()) {
                 patterns[id++] = pattern;
             }
         }

@@ -7,6 +7,17 @@
 #include "spdlog/spdlog.h"
 #include "librereuse/db/pattern_reader.h"
 
+static ::regextools::RegexEntity grpc_entity_from_rereuse_entity(const rereuse::db::RegexEntity &entity) {
+    ::regextools::RegexEntity new_entity;
+    new_entity.set_pattern(entity.get_pattern());
+    new_entity.set_repo_location(entity.get_repo_location());
+    new_entity.set_file_path(entity.get_file_path());
+    new_entity.set_line_number(entity.get_line_number());
+    new_entity.set_license(entity.get_license());
+
+    return new_entity;
+}
+
 regextools::QueryServiceImpl::QueryServiceImpl(unsigned int workers, const std::string &path) {
     auto clusters = rereuse::db::read_semantic_clusters(path);
     repo = std::make_unique<rereuse::db::ParallelRegexClusterRepository>(workers);
@@ -30,8 +41,9 @@ grpc::Status regextools::QueryServiceImpl::ExecQuery(::grpc::ServerContext *cont
     std::unique_ptr<rereuse::query::BaseClusterQuery> query = std::make_unique<rereuse::query::ClusterMatchQuery>(positive_examples, negative_examples);
 
     auto results = this->repo->query(query);
-    for (auto &result : results) {
-        response->add_results(std::move(result));
+    for (const auto &result : results) {
+        auto new_result = grpc_entity_from_rereuse_entity(result);
+        response->mutable_results()->Add(std::move(new_result));
     }
 
     response->set_total(results.size());

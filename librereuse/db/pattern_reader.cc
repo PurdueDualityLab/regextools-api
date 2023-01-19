@@ -106,7 +106,7 @@ std::vector<std::unique_ptr<rereuse::db::Cluster>> rereuse::db::read_semantic_cl
 std::vector<std::string> rereuse::db::unpack_patterns(const std::vector<std::unique_ptr<rereuse::db::Cluster>> &clusters) {
     std::vector<std::string> all_patterns;
     for (const auto &cluster : clusters) {
-        const auto &patterns = cluster->get_patterns();
+        const auto &patterns = cluster->get_entities();
         std::copy(patterns.cbegin(), patterns.cend(), std::back_inserter(all_patterns));
     }
 

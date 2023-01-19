@@ -19,7 +19,7 @@ rereuse::db::RegexClusterRepository::RegexClusterRepository()
 
 /* TODO change ctor to take iterators instead of specific data structures. This seems like the more general way */
 rereuse::db::RegexClusterRepository::RegexClusterRepository(int maxClusterSize,
-                                                            const std::unordered_set<std::string> &patterns)
+                                                            const std::vector<rereuse::db::RegexEntity> &patterns)
                                                             : maxClusterSize(maxClusterSize)
                                                             , skipTestOpt(false) {
     for (const auto &pattern : patterns) {
@@ -28,7 +28,7 @@ rereuse::db::RegexClusterRepository::RegexClusterRepository(int maxClusterSize,
             // Get the back cluster
             auto back = this->clusters.back();
             // And push the pattern
-            bool added = back->add_pattern(pattern);
+            bool added = back->add_entity(pattern);
 #if 0
             if (!added) {
                     std::cerr << "RegexClusterRepository: failed to add pattern to cluster" << std::endl;
@@ -39,7 +39,7 @@ rereuse::db::RegexClusterRepository::RegexClusterRepository(int maxClusterSize,
         } else {
             // Otherwise, push a new one
             auto new_cluster = std::make_shared<Cluster>();
-            bool successful = new_cluster->add_pattern(pattern);
+            bool successful = new_cluster->add_entity(pattern);
             if (successful) {
                 // If successful, push the new cluster onto the back
                 this->clusters.push_back(std::move(new_cluster));
@@ -62,76 +62,10 @@ rereuse::db::RegexClusterRepository::RegexClusterRepository(int maxClusterSize,
     }
 }
 
-rereuse::db::RegexClusterRepository::RegexClusterRepository(int maxClusterSize, const std::string &path)
-        : maxClusterSize(maxClusterSize)
-        , skipTestOpt(false) {
-
-    // Open a file to the path
-    std::ifstream db_file(path);
-    if (db_file.is_open()) {
-        // Parse the file line by line
-        std::string line;
-        while (std::getline(db_file, line)) {
-            std::string regex_pattern;
-            try {
-                auto line_obj = json::parse(line);
-                // Get the pattern out of each json object
-                regex_pattern = line_obj["pattern"];
-                if (regex_pattern.size() > 100) {
-                    // Maybe filtering out super long patterns will help fight against the segfaults
-                    continue;
-                }
-            } catch (json::parse_error& err) {
-                continue;
-            }
-
-            // If there is an empty cluster...
-            if (!this->clusters.empty() && this->clusters.back()->get_size() < this->maxClusterSize) {
-                // Get the back cluster
-                auto back = this->clusters.back();
-                // And push the pattern
-                bool added = back->add_pattern(regex_pattern);
-#if 0
-                if (!added) {
-                    std::cerr << "RegexClusterRepository: failed to add pattern to cluster" << std::endl;
-                } else {
-                    std::cout << "RegexClusterRepository: added pattern to cluster" << std::endl;
-                }
-#endif
-            } else {
-                // Otherwise, push a new one
-                auto new_cluster = std::make_shared<Cluster>();
-                bool successful = new_cluster->add_pattern(regex_pattern);
-                if (successful) {
-                    // If successful, push the new cluster onto the back
-                    this->clusters.push_back(std::move(new_cluster));
-                    //std::cout << "RegexClusterRepository: added new cluster" << std::endl;
-                } else {
-                    //std::cerr << "RegexClusterRepository: failed to add new cluster" << std::endl;
-                }
-            }
-        }
-
-        // Compile all of the regex sets
-        for (auto it = clusters.begin(); it != clusters.end();) {
-            auto cluster = *it;
-            if (cluster->compile()) {
-                ++it;
-            } else {
-                // Failed to compile, so remove it from the list
-                std::cerr << "Failed to compile cluster" << std::endl;
-                it = this->clusters.erase(it);
-            }
-        }
-    } else {
-        // TODO throw an exception
-    }
-}
-
 int rereuse::db::RegexClusterRepository::pattern_count() const {
     int total_patterns = 0;
     for (const auto &cluster : this->clusters) {
-        total_patterns += cluster->get_patterns().size();
+        total_patterns += cluster->get_entities().size();
     }
 
     return total_patterns;
@@ -140,7 +74,7 @@ int rereuse::db::RegexClusterRepository::pattern_count() const {
 rereuse::query::QueryResult
 rereuse::db::RegexClusterRepository::deep_query(const std::unique_ptr<rereuse::query::BaseClusterQuery> &query) const {
     std::vector<double> average_vector_sizes;
-    std::unordered_set<std::string> combined_results;
+    std::vector<RegexEntity> combined_results;
     unsigned long cluster_id = 0;
     std::vector<std::chrono::microseconds> test_hit_times, test_miss_times, drill_times;
     unsigned long skipped_clusters = 0;
@@ -205,7 +139,10 @@ std::optional<unsigned long> rereuse::db::RegexClusterRepository::get_regex_clus
 
     unsigned long idx = 0;
     for (const auto &cluster : this->clusters) {
-        if (std::count(cluster->get_patterns().begin(), cluster->get_patterns().end(), pattern) > 0) {
+        auto is_found = std::count_if(cluster->get_entities().begin(), cluster->get_entities().end(), [pattern](const RegexEntity &item) {
+            return item.get_pattern() == pattern;
+        });
+        if (is_found > 0) {
             return {idx};
         } else {
             idx++;

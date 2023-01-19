@@ -12,19 +12,20 @@
 #include "re2/re2.h"
 
 #include "../query/base_regex_query.h"
+#include "librereuse/db/regex_entity.h"
 
 namespace rereuse::db {
     class RegexRepository {
     public:
-        explicit RegexRepository(const std::string &path);
-        explicit RegexRepository(const std::vector<std::string>& patterns);
+        explicit RegexRepository(const std::vector<RegexEntity>& patterns);
 
         int size() { return this->regexes.size(); }
 
-        std::unordered_set<std::string> query(const std::unique_ptr<query::BaseRegexQuery> &query);
+        std::vector<RegexEntity> query(const std::unique_ptr<query::BaseRegexQuery> &query);
 
     private:
-        std::vector<std::unique_ptr<re2::RE2>> regexes;
+        std::vector<std::unique_ptr<RE2>> regexes;
+        std::vector<RegexEntity> entities;
     };
 }
 

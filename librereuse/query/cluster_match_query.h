@@ -18,7 +18,7 @@ namespace rereuse::query {
          * @param cluster Cluster to query
          * @return set of patterns that match the query
          */
-        std::unordered_set<std::string> query(const std::shared_ptr<rereuse::db::Cluster> &cluster, std::chrono::microseconds *duration, double *average_match_vector_length) override;
+        std::vector<db::RegexEntity> query(const std::shared_ptr<rereuse::db::Cluster> &cluster, std::chrono::microseconds *duration, double *average_match_vector_length) override;
 
         /**
          * Determines if a cluster might have a match

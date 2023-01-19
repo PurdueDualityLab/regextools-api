@@ -5,6 +5,14 @@ package regextools;
 
 option go_package = "github.com/regextools/protos/query_service";
 
+message RegexEntity {
+  string pattern = 1;
+  string repo_location = 2;
+  string file_path = 3;
+  uint64 line_number = 4;
+  string license = 5;
+}
+
 message Query {
   repeated string positive = 1;
   repeated string negative = 2;
@@ -13,7 +21,7 @@ message Query {
 
 message QueryResults {
   uint64 total = 1;
-  repeated string results = 2;
+  repeated RegexEntity results = 2;
 }
 
 service QueryService {

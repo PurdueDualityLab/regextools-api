@@ -7,7 +7,7 @@
 #include "spdlog/spdlog.h"
 #include "egret/egret.h" // TODO fix this in egret
 
-rereuse::db::Cluster::Cluster(const std::unordered_set<std::string> &patterns)
+rereuse::db::Cluster::Cluster(const std::unordered_set<RegexEntity> &entities)
         : size(0),
           set_is_compiled(false) {
     auto opts = RE2::Options();
@@ -18,9 +18,9 @@ rereuse::db::Cluster::Cluster(const std::unordered_set<std::string> &patterns)
 
     for (const auto &pattern : patterns) {
         std::string error_msg;
-        int ret = this->regex_set->Add(pattern, &error_msg);
+        int ret = this->regex_set->Add(pattern.get_pattern(), &error_msg);
         if (ret < 0) {
-            spdlog::error("Cluster::Cluster: Error while parsing regex /{}/: {}", pattern, error_msg);
+            spdlog::error("Cluster::Cluster: Error while parsing regex /{}/: {}", pattern.get_pattern(), error_msg);
         } else {
             this->size++; // A new regex was added, so increment the size
             this->patterns.push_back(pattern);
@@ -38,9 +38,9 @@ rereuse::db::Cluster::Cluster()
     this->regex_set = std::make_unique<RE2::Set>(opts, RE2::ANCHOR_BOTH);
 }
 
-bool rereuse::db::Cluster::add_pattern(const std::string &pattern) {
+bool rereuse::db::Cluster::add_entity(const RegexEntity &pattern) {
     std::string error_msg;
-    int ret = this->regex_set->Add(pattern, &error_msg);
+    int ret = this->regex_set->Add(pattern.get_pattern(), &error_msg);
     if (ret >= 0) {
         // Successfully added the regex
         this->set_is_compiled = false; // This becomes out of date...
@@ -48,7 +48,7 @@ bool rereuse::db::Cluster::add_pattern(const std::string &pattern) {
         this->patterns.push_back(pattern);
         return true;
     } else {
-        spdlog::error("Cluster:add_pattern: Could not add regex /{}/: {}", pattern, error_msg);
+        spdlog::error("Cluster:add_entity: Could not add regex /{}/: {}", pattern.get_pattern(), error_msg);
         return false;
     }
 }
@@ -98,8 +98,8 @@ void rereuse::db::Cluster::prime() {
     // Generate a set of strings for this cluster
     std::unordered_set<std::string> priming_strings;
     for (const auto &pattern : this->patterns) {
-        auto strings = run_engine(pattern, "regexes");
-        re2::RE2 pattern_regex(pattern);
+        auto strings = run_engine(pattern.get_pattern(), "regexes");
+        re2::RE2 pattern_regex(pattern.get_pattern());
         std::unordered_set<std::string> positive_strings;
         //std::copy_if(strings.begin(), strings.end(), std::inserter(positive_strings, positive_strings.begin()), [&pattern_regex](std::string &str) { return re2::RE2::FullMatch(str, pattern_regex); });
         std::copy_if(strings.begin(), strings.end(), std::inserter(positive_strings, positive_strings.begin()), [&pattern_regex](std::string &str) { return true; });
