@@ -6,3 +6,12 @@ cc_test(
         "@com_google_googletest//:gtest_main",
     ],
 )
+
+cc_test(
+    name = "chunk-test",
+    srcs = ["chunk_test.cc"],
+    deps = [
+        "//librereuse:rereuse",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
