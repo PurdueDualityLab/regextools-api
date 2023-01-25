@@ -10,7 +10,7 @@
 #include <shared_mutex>
 #include <spdlog/spdlog.h>
 
-#include "threadpool/ThreadPool.h"
+#include "ThreadPool.h"
 
 /*----------HELPER CLASSES------------*/
 /**

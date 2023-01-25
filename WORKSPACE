@@ -87,12 +87,10 @@ new_git_repository(
 )
 
 # threadpool - a generic C++11 thread pool
-new_git_repository(
-    name = "com_github_progschj_threadpool",
-    build_file = "@//:third_party/threadpool.BUILD",
-    commit = "9a42ec1329f259a5f4881a291db1dcb8f2ad9040",
-    remote = "https://github.com/progschj/ThreadPool.git",
-    shallow_since = "1411727561 +0200",
+git_repository(
+    name = "com_github_softwaresale_threadpool",
+    branch = "master",
+    remote = "https://github.com/softwaresale/ThreadPool.git",
 )
 
 # fmtlib - used for formatting strings
