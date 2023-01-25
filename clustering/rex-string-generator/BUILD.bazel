@@ -1,0 +1,12 @@
+cc_binary(
+    name = "rex-string-generator",
+    srcs = [
+        "main.cc",
+        "rex_wrapper.cc",
+        "rex_wrapper.h",
+    ],
+    deps = [
+        "//librereuse:rereuse",
+        "@com_github_nlohmann_json//:json",
+    ],
+)
