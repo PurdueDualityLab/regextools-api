@@ -1,0 +1,17 @@
+cc_binary(
+    name = "gen",
+    srcs = [
+        "main.cc",
+        "regex_entity.cc",
+        "regex_entity.h",
+        "similarity_table.cc",
+        "similarity_table.h",
+    ],
+    deps = [
+        "@com_gabime_spdlog//:spdlog",
+        "@com_github_fmtlib_fmt//:fmtlib",
+        "@com_github_nlohmann_json//:json",
+        "@com_github_softwaresale_threadpool//:threadpool",
+        "@com_googlesource_code_re2//:re2",
+    ],
+)

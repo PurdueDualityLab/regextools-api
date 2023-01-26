@@ -89,8 +89,9 @@ new_git_repository(
 # threadpool - a generic C++11 thread pool
 git_repository(
     name = "com_github_softwaresale_threadpool",
-    branch = "master",
+    commit = "92b69a3ea29efb7028dfa9441ffc46a1e93e0e2a",
     remote = "https://github.com/softwaresale/ThreadPool.git",
+    shallow_since = "1672958079 -0500",
 )
 
 # fmtlib - used for formatting strings
