@@ -26,7 +26,12 @@ int main(int argc, char **argv) {
     // Make entities out of everything
     std::vector<RegexEntity> entities;
     for (auto &[regex, strings] : input_object.items()) {
-        entities.emplace_back(regex, strings);
+        try {
+            entities.emplace_back(regex, strings);
+        } catch (std::runtime_error &exe) {
+            // Skip bad regexes
+            continue;
+        }
     }
 
     spdlog::info("Built out entities");

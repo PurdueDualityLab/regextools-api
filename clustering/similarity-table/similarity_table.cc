@@ -9,6 +9,7 @@
 #include <sstream>
 #include <thread>
 #include <spdlog/spdlog.h>
+#include <nlohmann/json.hpp>
 #include "ThreadPool.h"
 
 static std::string convert_thread_id(std::thread::id id) {
@@ -77,10 +78,12 @@ void SimilarityTable::to_similarity_graph() {
 std::ostream &SimilarityTable::output_abc(std::ostream &os) const {
     for (int row_idx = 0; row_idx < scores.size(); row_idx++) {
         auto row = this->scores[row_idx];
+        nlohmann::json row_pattern_obj = entities[row_idx].get_regex()->pattern();
         for (int col_idx = 0; col_idx < row.size(); col_idx++) {
             double score = row[col_idx];
             if (score > 0) {
-                os << entities[row_idx].get_regex()->pattern() << '\t' << entities[col_idx].get_regex()->pattern() << '\t' << score << std::endl;
+                nlohmann::json column_pattern_obj = entities[col_idx].get_regex()->pattern();
+                os << row_pattern_obj << '\t' << column_pattern_obj << '\t' << score << std::endl;
             }
         }
     }

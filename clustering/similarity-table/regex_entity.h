@@ -12,7 +12,7 @@
 
 class RegexEntity {
 public:
-    RegexEntity(const std::string& regex, const std::vector<std::string> &strings);
+    RegexEntity(const std::string& regex, std::vector<std::string> strings);
 
     /**
      * Get a reference to the underlying regex
