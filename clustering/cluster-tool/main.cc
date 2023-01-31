@@ -12,7 +12,7 @@
 #include <condition_variable>
 #include <thread>
 #include <fstream>
-#include <threadpool/ThreadPool.h>
+#include "ThreadPool.h"
 #include <spdlog/spdlog.h>
 #include "librereuse/db/pattern_reader.h"
 
@@ -33,7 +33,8 @@ private:
 
 struct RegexInfo {
 
-    explicit RegexInfo(std::string pattern) {
+    RegexInfo(const std::string& pattern, std::string regex_id)
+    : regex_id(std::move(regex_id)) {
 
         /*
         try {
@@ -98,26 +99,28 @@ struct RegexInfo {
     }
 
     std::unique_ptr<re2::RE2> regex;
+    std::string regex_id;
     std::unordered_set<std::string> positive;
     std::unordered_set<std::string> negative;
 };
 
-std::vector<RegexInfo> build_regex_infos(std::vector<std::string> regex_patterns, std::atomic_long &built) {
+std::vector<RegexInfo> build_regex_infos(const std::vector<rereuse::db::RegexEntity>& regex_entities, std::atomic_long &built) {
     std::vector<RegexInfo> regex_infos;
-    for (auto &pattern : regex_patterns) {
-        spdlog::info("build_regex_infos: Building regex #{} /{}/...", built++, pattern);
+    for (auto &entity : regex_entities) {
+        spdlog::info("build_regex_infos: Building regex #{} /{}/...", built++, entity.get_pattern());
         try {
-            RegexInfo newInfo(std::move(pattern));
+            RegexInfo newInfo(entity.get_pattern(), entity.get_id());
             regex_infos.push_back(std::move(newInfo));
         } catch (regex_exception &exe) {
             // skip this one regex
-            spdlog::warn("build_regex_infos: Skipping regex /{}/: {}", pattern, exe.what());
+            spdlog::warn("build_regex_infos: Skipping regex /{}/: {}", entity.get_pattern(), exe.what());
         }
     }
 
     return regex_infos;
 }
 
+#if 0
 std::vector<RegexInfo> build_regex_infos_threaded(std::vector<std::string> regex_patterns, unsigned int workers) {
     ThreadPool work_pool(workers);
 
@@ -150,6 +153,7 @@ std::vector<RegexInfo> build_regex_infos_threaded(std::vector<std::string> regex
 
     return all_infos;
 }
+#endif
 
 std::vector<RegexInfo> cluster(RegexInfo seed, std::vector<RegexInfo> &regexes, int max_cluster_size) {
     unsigned long id = 0;
@@ -242,7 +246,7 @@ int main(int argc, const char **argv) {
     std::atomic_long built(0);
     {
         auto patterns = rereuse::db::read_patterns_from_path(path);
-        regex_infos = build_regex_infos(std::move(patterns), built);
+        regex_infos = build_regex_infos(patterns, built);
         // regex_infos = build_regex_infos_threaded(std::move(patterns), std::thread::hardware_concurrency());
     }
 
@@ -256,7 +260,11 @@ int main(int argc, const char **argv) {
     for (const auto &cluster : clusters) {
         nlohmann::json cluster_obj;
         for (const auto &regex : cluster) {
-            cluster_obj.push_back(regex.regex->pattern());
+            nlohmann::json entity {
+                    { "pattern", regex.regex->pattern() },
+                    { "id", regex.regex_id }
+            };
+            cluster_obj.push_back(std::move(entity));
         }
 
         clusters_obj.push_back(cluster_obj);

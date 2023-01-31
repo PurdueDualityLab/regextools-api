@@ -10,7 +10,7 @@
 #include "arg_parser.h"
 #include "librereuse/db/pattern_reader.h"
 
-std::optional<std::string> read_next_pattern(std::istream &input_stream) {
+std::optional<rereuse::db::RegexEntity> read_next_entity(std::istream &input_stream) {
     while (!input_stream.eof()) {
         std::string next_line;
         std::getline(input_stream, next_line);
@@ -19,8 +19,9 @@ std::optional<std::string> read_next_pattern(std::istream &input_stream) {
         try {
             auto obj = nlohmann::json::parse(next_line);
             auto pattern = obj.at("pattern").get<std::string>();
+            auto id = obj.at("id").get<std::string>();
             // We found a valid pattern
-            return {pattern};
+            return std::make_optional<rereuse::db::RegexEntity>(pattern, id);
         } catch (nlohmann::json::parse_error &exe) {
             continue;
         } catch (nlohmann::json::out_of_range &exe) {
@@ -42,10 +43,12 @@ bool contains_only_ascii(const std::string &input_string) {
     return true;
 }
 
-void output_regexes(std::vector<std::string> patterns, std::ostream &os) {
+void output_regexes(const std::vector<rereuse::db::RegexEntity>& patterns, std::ostream &os) {
     for (auto &pattern : patterns) {
-        nlohmann::json obj;
-        obj["pattern"] = std::move(pattern);
+        nlohmann::json obj {
+                {"pattern", pattern.get_pattern()},
+                {"id", pattern.get_id()}
+        };
         os << to_string(obj) << '\n';
     }
     os << std::endl;
@@ -72,19 +75,19 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    std::vector<std::string> valid_regexes;
-    std::optional<std::string> next_regex;
+    std::vector<rereuse::db::RegexEntity> valid_regexes;
+    std::optional<rereuse::db::RegexEntity> next_regex;
     re2::RE2::Options re2_opts;
     re2_opts.set_log_errors(false);
-    while ((next_regex = read_next_pattern(input_file)).has_value()) {
-        std::string next_pattern = next_regex.value();
+    while ((next_regex = read_next_entity(input_file)).has_value()) {
+        rereuse::db::RegexEntity next_pattern = next_regex.value();
 
         // Actual filter it
-        std::cout << "Checking regex /" << next_pattern << "/..." << std::endl;
+        std::cout << "Checking regex /" << next_pattern.get_pattern() << "/..." << std::endl;
 
         if (args.max_length > 0) {
             std::cout << "Checking against max length... " << std::flush;
-            if (next_pattern.length() > args.max_length) {
+            if (next_pattern.get_pattern().length() > args.max_length) {
                 std::cout << "FAILED" << std::endl;
                 continue;
             }
@@ -94,7 +97,7 @@ int main(int argc, char **argv) {
 
         if (args.asciiOnly) {
             std::cout << "Checking against ascii only... " << std::flush;
-            if (!contains_only_ascii(next_pattern)) {
+            if (!contains_only_ascii(next_pattern.get_pattern())) {
                 std::cout << "FAILED" << std::endl;
                 continue;
             }
@@ -104,7 +107,7 @@ int main(int argc, char **argv) {
         if (args.doRE2Filter) {
             { // Putting this in a scope to ensure deletion??
                 std::cout << "Checking against re2... " << std::flush;
-                re2::RE2 newRegex(next_pattern, re2_opts);
+                re2::RE2 newRegex(next_pattern.get_pattern(), re2_opts);
                 if (!newRegex.ok()) {
                     std::cout << "FAILED" << std::endl;
                     continue; // Found a point where this isn't valid, so continue onto the next one
@@ -117,7 +120,7 @@ int main(int argc, char **argv) {
         if (args.doEgretFilter) {
             std::cout << "Checking against egret... " << std::flush;
             try {
-                run_engine(next_pattern, "evil");
+                run_engine(next_pattern.get_pattern(), "evil");
             } catch (std::runtime_error &err) {
                 // Error while running egret
                 std::cout << "FAILED" << std::endl;
