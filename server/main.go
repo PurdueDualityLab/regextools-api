@@ -14,9 +14,11 @@ func main() {
 	resultTable := NewResultTable()
 	tracker := NewParticipantTracker()
 
+	repo := NewRegexEntityRepository()
+
 	router := gin.Default()
 	router.Use(cors.Default())
-	router.POST("/query", QueryHandler(ctx, resultTable, tracker))
+	router.POST("/query", QueryHandler(ctx, resultTable, tracker, repo))
 
 	err = router.Run()
 	if err != nil {

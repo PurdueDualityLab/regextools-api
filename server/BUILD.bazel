@@ -8,6 +8,7 @@ go_library(
         "paging.go",
         "participant_tracking.go",
         "query_handler.go",
+        "regex_db.go",
         "regexdb_client.go",
     ],
     importpath = "github.com/softwaresale/regextools-server/server",
