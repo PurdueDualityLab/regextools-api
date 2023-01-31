@@ -9,14 +9,9 @@
 namespace rereuse::db {
 
 RegexEntity::RegexEntity(std::string pattern,
-                         std::string repo_location,
-                         std::string file_path,
-                         size_t line_number,
-                         std::string license)
+                         std::string id)
 : pattern(std::move(pattern))
-, repo_location(std::move(repo_location))
-, file_path(std::move(file_path))
-, line_number(line_number)
-, license(std::move(license)) {}
+, id(std::move(id))
+{}
 
 } // db

@@ -7,7 +7,7 @@
 #include "spdlog/spdlog.h"
 #include "egret/egret.h" // TODO fix this in egret
 
-rereuse::db::Cluster::Cluster(const std::unordered_set<RegexEntity> &entities)
+rereuse::db::Cluster::Cluster(std::vector<RegexEntity> entities)
         : size(0),
           set_is_compiled(false) {
     auto opts = RE2::Options();

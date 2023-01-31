@@ -4,13 +4,15 @@
 
 #include "fuzzy_cluster_query.h"
 
-rereuse::query::FuzzyClusterQuery::FuzzyClusterQuery(const std::unordered_set<std::string> &positive,
-                                                     const std::unordered_set<std::string> &negative)
-                                                     : positive(positive),
-                                                       negative(negative) {
+#include <utility>
+
+rereuse::query::FuzzyClusterQuery::FuzzyClusterQuery(std::unordered_set<std::string> positive,
+                                                     std::unordered_set<std::string> negative)
+                                                     : positive(std::move(positive)),
+                                                       negative(std::move(negative)) {
 }
 
-std::unordered_set<std::string>
+std::vector<rereuse::db::RegexEntity>
 rereuse::query::FuzzyClusterQuery::query(const std::shared_ptr<rereuse::db::Cluster> &cluster, std::chrono::microseconds *duration, double *average_vector_size) {
 
     std::unordered_set<std::string> potential_matches;
@@ -40,7 +42,7 @@ rereuse::query::FuzzyClusterQuery::query(const std::shared_ptr<rereuse::db::Clus
         *duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     }
 
-    return {"Maybe"};
+    return {};
 }
 
 bool rereuse::query::FuzzyClusterQuery::test(const std::shared_ptr<rereuse::db::Cluster> &cluster, std::chrono::microseconds *duration) {

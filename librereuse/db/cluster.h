@@ -18,7 +18,7 @@ namespace rereuse::db {
     class Cluster {
     public:
         explicit Cluster();
-        explicit Cluster(const std::unordered_set<RegexEntity>& entities);
+        explicit Cluster(std::vector<RegexEntity> entities);
 
         bool add_entity(const RegexEntity &entity);
         bool compile(bool eager = false);

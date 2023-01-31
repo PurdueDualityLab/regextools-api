@@ -13,9 +13,9 @@ namespace rereuse::query {
      */
     class FuzzyClusterQuery : public BaseClusterQuery {
     public:
-        explicit FuzzyClusterQuery(const std::unordered_set<std::string> &positive, const std::unordered_set<std::string> &negative);
+        explicit FuzzyClusterQuery(std::unordered_set<std::string> positive, std::unordered_set<std::string> negative);
 
-        std::unordered_set<std::string> query(const std::shared_ptr<rereuse::db::Cluster> &cluster, std::chrono::microseconds *duration = nullptr, double *average_vector_size = nullptr) override;
+        std::vector<db::RegexEntity> query(const std::shared_ptr<rereuse::db::Cluster> &cluster, std::chrono::microseconds *duration = nullptr, double *average_vector_size = nullptr) override;
 
         bool test(const std::shared_ptr<rereuse::db::Cluster> &cluster, std::chrono::microseconds *duration = nullptr) override;
 

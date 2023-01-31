@@ -12,17 +12,17 @@
 
 using namespace nlohmann;
 
-std::vector<std::string> rereuse::db::read_patterns(std::istream &input_stream) {
-    std::vector<std::string> patterns;
+std::vector<rereuse::db::RegexEntity> rereuse::db::read_patterns(std::istream &input_stream) {
+    std::vector<RegexEntity> patterns;
     std::string line;
     unsigned long line_no = 0;
     while (std::getline(input_stream, line)) {
         line_no++;
         try {
             auto line_obj = json::parse(line);
-            auto pattern = line_obj["pattern"];
+            RegexEntity entity(line_obj.at("pattern").get<std::string>(), line_obj.at("id").get<std::string>());
             // TODO Filter out super long patterns maybe?
-            patterns.push_back(std::move(pattern));
+            patterns.push_back(std::move(entity));
         } catch (json::parse_error &err) {
             // Just keep going
             spdlog::debug("pattern_reader:read_patterns: Failed to parse line {}", line_no);
@@ -33,12 +33,10 @@ std::vector<std::string> rereuse::db::read_patterns(std::istream &input_stream) 
     return patterns;
 }
 
-std::vector<std::string> rereuse::db::read_patterns_from_path(const std::string &path) {
+std::vector<rereuse::db::RegexEntity> rereuse::db::read_patterns_from_path(const std::string &path) {
     std::ifstream db_file(path);
     if (db_file.is_open()) {
-        std::vector<std::string> patterns = rereuse::db::read_patterns(db_file);
-        db_file.close();
-        return patterns;
+        return rereuse::db::read_patterns(db_file);
     } else {
         return {};
     }
@@ -91,20 +89,21 @@ std::vector<std::unique_ptr<rereuse::db::Cluster>> rereuse::db::read_semantic_cl
 
     // Iterate over clusters
     for (const auto &cluster_patterns : cluster_array) {
-        std::unordered_set<std::string> patterns;
+        std::vector<rereuse::db::RegexEntity> entities;
         for (const auto &cluster_pattern : cluster_patterns) {
-            patterns.insert(cluster_pattern.get<std::string>());
+            rereuse::db::RegexEntity entity(cluster_pattern.at("pattern").get<std::string>(), cluster_pattern.at("id").get<std::string>());
+            entities.push_back(std::move(entity));
         }
 
-        auto cluster = std::make_unique<rereuse::db::Cluster>(patterns);
+        auto cluster = std::make_unique<rereuse::db::Cluster>(std::move(entities));
         clusters.push_back(std::move(cluster));
     }
 
     return clusters;
 }
 
-std::vector<std::string> rereuse::db::unpack_patterns(const std::vector<std::unique_ptr<rereuse::db::Cluster>> &clusters) {
-    std::vector<std::string> all_patterns;
+std::vector<rereuse::db::RegexEntity> rereuse::db::unpack_patterns(const std::vector<std::unique_ptr<rereuse::db::Cluster>> &clusters) {
+    std::vector<rereuse::db::RegexEntity> all_patterns;
     for (const auto &cluster : clusters) {
         const auto &patterns = cluster->get_entities();
         std::copy(patterns.cbegin(), patterns.cend(), std::back_inserter(all_patterns));
@@ -114,18 +113,18 @@ std::vector<std::string> rereuse::db::unpack_patterns(const std::vector<std::uni
 }
 
 
-std::vector<std::unique_ptr<rereuse::db::Cluster>> rereuse::db::randomize_clusters(const std::vector<std::string> &all_patterns_orig, unsigned int expected_cluster_size) {
+std::vector<std::unique_ptr<rereuse::db::Cluster>> rereuse::db::randomize_clusters(const std::vector<rereuse::db::RegexEntity> &all_patterns_orig, unsigned int expected_cluster_size) {
     // Copy all the patterns
-    std::vector<std::string> all_patterns(all_patterns_orig.cbegin(), all_patterns_orig.cend());
+    std::vector<RegexEntity> all_patterns(all_patterns_orig.cbegin(), all_patterns_orig.cend());
     // Shuffle their order
     std::shuffle(all_patterns.begin(), all_patterns.end(), std::mt19937(std::random_device()()));
     spdlog::debug("randomized_cluster: creating clusters of size {}", expected_cluster_size);
 
     std::vector<std::unique_ptr<rereuse::db::Cluster>> new_clusters;
-    std::unordered_set<std::string> cluster_strings;
+    std::vector<RegexEntity> cluster_strings;
     for (auto &pattern : all_patterns) {
         // Add this item to the current cluster strings
-        cluster_strings.insert(std::move(pattern));
+        cluster_strings.push_back(std::move(pattern));
 
         if (cluster_strings.size() == expected_cluster_size) {
             // This cluster is full
