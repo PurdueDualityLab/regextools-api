@@ -10,10 +10,7 @@
 static ::regextools::RegexEntity grpc_entity_from_rereuse_entity(const rereuse::db::RegexEntity &entity) {
     ::regextools::RegexEntity new_entity;
     new_entity.set_pattern(entity.get_pattern());
-    new_entity.set_repo_location(entity.get_repo_location());
-    new_entity.set_file_path(entity.get_file_path());
-    new_entity.set_line_number(entity.get_line_number());
-    new_entity.set_license(entity.get_license());
+    new_entity.set_id(entity.get_id());
 
     return new_entity;
 }

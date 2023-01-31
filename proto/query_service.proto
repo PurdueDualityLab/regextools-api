@@ -7,10 +7,7 @@ option go_package = "github.com/regextools/protos/query_service";
 
 message RegexEntity {
   string pattern = 1;
-  string repo_location = 2;
-  string file_path = 3;
-  uint64 line_number = 4;
-  string license = 5;
+  string id = 2;
 }
 
 message Query {
