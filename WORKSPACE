@@ -116,8 +116,16 @@ http_archive(
 # egret - regex string generation, specifically our fork of the repo
 git_repository(
     name = "com_github_dualitylab_egret",
+    commit = "795a993e08a09b51c3cc1029d3c390469ec15645",
     remote = "git@github.com:PurdueDualityLab/egret.git",
-    tag = "v0.1.1",
+    shallow_since = "1670222962 -0500",
+)
+
+git_repository(
+    name = "com_github_softwaresale_threadpool",
+    commit = "92b69a3ea29efb7028dfa9441ffc46a1e93e0e2a",
+    remote = "https://github.com/softwaresale/ThreadPool.git",
+    shallow_since = "1672958079 -0500",
 )
 
 # Google test
