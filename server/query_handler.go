@@ -76,7 +76,7 @@ func shouldTrack(ctx *gin.Context) (string, string, bool) {
 	return participantId, taskId, hasParticipantId && hasTaskId
 }
 
-func QueryHandler(netCtx context.Context, resultTable *ResultTable, tracker *ParticipantTracker) gin.HandlerFunc {
+func QueryHandler(netCtx context.Context, resultTable *ResultTable, tracker *ParticipantTracker, regexRepo *RegexEntityRepository) gin.HandlerFunc {
 
 	fn := func(ctx *gin.Context) {
 
@@ -127,6 +127,10 @@ func QueryHandler(netCtx context.Context, resultTable *ResultTable, tracker *Par
 			ctx.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
 			return
 		}
+
+		// Inflate the matching regexes
+		// TODO
+		_, err = regexRepo.GetRegexesById([]string{})
 
 		// Cache the results
 		cacheKey := resultTable.CacheResults(request, results)

@@ -2,24 +2,17 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 
 go_library(
-    name = "server_lib",
+    name = "migrator_lib",
     srcs = [
-        "main.go",
-        "paging.go",
-        "participant_tracking.go",
-        "query_handler.go",
-        "regex_db.go",
-        "regexdb_client.go",
+        "migrator.go",
     ],
-    importpath = "github.com/softwaresale/regextools-server/server",
+    importpath = "github.com/softwaresale/regextools-server/server/db",
     visibility = ["//visibility:private"],
     deps = [
         "//proto:query_service_go_proto",
         "@com_github_aws_aws_sdk_go//aws/session",
         "@com_github_aws_aws_sdk_go//service/dynamodb",
         "@com_github_aws_aws_sdk_go//service/dynamodb/dynamodbattribute",
-        "@com_github_gin_contrib_cors//:cors",
-        "@com_github_gin_gonic_gin//:gin",
         "@com_github_google_uuid//:uuid",
         "@com_github_patrickmn_go_cache//:go-cache",
         "@org_golang_google_grpc//:go_default_library",
@@ -29,14 +22,14 @@ go_library(
 )
 
 go_binary(
-    name = "server",
-    embed = [":server_lib"],
+    name = "migrator",
+    embed = [":migrator_lib"],
     visibility = ["//visibility:public"],
 )
 
 go_image(
     name = "image",
-    embed = [":server_lib"],
+    embed = [":migrator_lib"],
 )
 
 # container_push(
