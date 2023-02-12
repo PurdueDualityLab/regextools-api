@@ -18,13 +18,13 @@ namespace rereuse::db {
     class Cluster {
     public:
         explicit Cluster();
-        explicit Cluster(std::vector<RegexEntity> entities);
+        explicit Cluster(const std::vector<RegexEntity>& entities);
 
         bool add_entity(const RegexEntity &entity);
         bool compile(bool eager = false);
         int get_size() const { return this->size; }
         bool is_compiled() const { return this->set_is_compiled; }
-        std::vector<RegexEntity> &get_entities() { return this->patterns; }
+        std::vector<RegexEntity> &get_entities() { return this->entities; }
         /**
          * Primes the set cache for this specific cluster, improving performance
          */
@@ -36,7 +36,7 @@ namespace rereuse::db {
         int size;
         bool set_is_compiled;
         std::unique_ptr<re2::RE2::Set> regex_set;
-        std::vector<RegexEntity> patterns;
+        std::vector<RegexEntity> entities;
     };
 }
 

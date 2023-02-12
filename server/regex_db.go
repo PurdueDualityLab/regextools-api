@@ -5,7 +5,20 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"log"
+	"sort"
 )
+
+type RegexForumLocation struct {
+	Type string `json:"type"`
+	URI  string `json:"uri"`
+}
+
+type RegexInfo struct {
+	FeatureVector map[string]int `json:"featureVector"`
+	Length        int            `json:"length"`
+	FeatureCount  int            `json:"featureCount"`
+	Score         float32        `json:"score"`
+}
 
 // RegexSourceLocation - models the usage of a regex somewhere in a public repository
 type RegexSourceLocation struct {
@@ -21,6 +34,8 @@ type RegexEntity struct {
 	Id              string                `json:"id"`
 	Pattern         string                `json:"pattern"`
 	SourceLocations []RegexSourceLocation `json:"sourceLocations"`
+	ForumLocations  []RegexForumLocation  `json:"forumLocations"`
+	Info            RegexInfo             `json:"info"`
 }
 
 type RegexEntityRepository struct {
@@ -41,9 +56,9 @@ func NewRegexEntityRepository() *RegexEntityRepository {
 	}
 }
 
-func (repo *RegexEntityRepository) GetRegexesById(ids []string) ([]RegexEntity, error) {
+func (repo RegexEntityRepository) GetRegexesById(ids []string) ([]RegexEntity, error) {
 
-	log.Printf("%v\n", ids)
+	log.Printf("regex_db: retrieving regexes with ids: %v\n", ids)
 
 	// Set up the request map
 	var requestIds []map[string]*dynamodb.AttributeValue
@@ -53,8 +68,6 @@ func (repo *RegexEntityRepository) GetRegexesById(ids []string) ([]RegexEntity, 
 		}
 		requestIds = append(requestIds, newRequestId)
 	}
-
-	log.Printf("%v\n", requestIds)
 
 	// Build input
 	input := dynamodb.BatchGetItemInput{
@@ -71,11 +84,18 @@ func (repo *RegexEntityRepository) GetRegexesById(ids []string) ([]RegexEntity, 
 		return []RegexEntity{}, err
 	}
 
+	log.Printf("regex_db: got results: %v\n", result.Responses)
+
 	var entities []RegexEntity
 	err = dynamodbattribute.UnmarshalListOfMaps(result.Responses[repo.tableName], &entities)
 	if err != nil {
 		return []RegexEntity{}, nil
 	}
+
+	// Sort the entities by score
+	sort.Slice(entities, func(i, j int) bool {
+		return entities[i].Info.Score < entities[j].Info.Score
+	})
 
 	return entities, nil
 }

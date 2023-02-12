@@ -17,6 +17,10 @@ static ::regextools::RegexEntity grpc_entity_from_rereuse_entity(const rereuse::
 
 regextools::QueryServiceImpl::QueryServiceImpl(unsigned int workers, const std::string &path) {
     auto clusters = rereuse::db::read_semantic_clusters(path);
+    int idx = 0;
+    for (const auto &cluster : clusters) {
+        spdlog::info("QueryService: cluster {} -> {}", idx++, cluster->get_entities().size());
+    }
     repo = std::make_unique<rereuse::db::ParallelRegexClusterRepository>(workers);
     spdlog::debug("QueryService: read {} semantic clusters", clusters.size());
     unsigned long cluster_count = 0;
@@ -27,6 +31,11 @@ regextools::QueryServiceImpl::QueryServiceImpl(unsigned int workers, const std::
     }
 
     spdlog::info("QueryService: Loaded {} clusters", cluster_count);
+    spdlog::info("QueryService: cluster size information:");
+    idx = 0;
+    for (const auto &cluster : repo->get_clusters()) {
+        spdlog::info("QueryService: cluster {} -> {}", idx++, cluster->get_entities().size());
+    }
 }
 
 

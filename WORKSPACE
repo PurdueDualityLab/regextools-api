@@ -120,13 +120,6 @@ git_repository(
     shallow_since = "1670222962 -0500",
 )
 
-git_repository(
-    name = "com_github_softwaresale_threadpool",
-    commit = "92b69a3ea29efb7028dfa9441ffc46a1e93e0e2a",
-    remote = "https://github.com/softwaresale/ThreadPool.git",
-    shallow_since = "1672958079 -0500",
-)
-
 # Google test
 http_archive(
     name = "com_google_googletest",

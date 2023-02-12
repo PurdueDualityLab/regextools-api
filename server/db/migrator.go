@@ -6,12 +6,23 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"github.com/google/uuid"
 	"io"
 	"log"
 	"os"
 	"strconv"
 )
+
+type RegexForumLocation struct {
+	Type string `json:"type"`
+	URI  string `json:"uri"`
+}
+
+type RegexInfo struct {
+	FeatureVector map[string]int `json:"featureVector"`
+	Length        int            `json:"length"`
+	FeatureCount  int            `json:"featureCount"`
+	Score         float32        `json:"score"`
+}
 
 // OldRegexSourceLocation - models the usage of a regex somewhere in a public repository
 type OldRegexSourceLocation struct {
@@ -27,6 +38,8 @@ type OldRegexEntity struct {
 	Id              string                   `json:"id"`
 	Pattern         string                   `json:"pattern"`
 	SourceLocations []OldRegexSourceLocation `json:"sourceLocations"`
+	ForumLocations  []RegexForumLocation     `json:"forumLocations"`
+	Info            RegexInfo                `json:"info"`
 }
 
 type RegexSourceLocation struct {
@@ -42,6 +55,8 @@ type RegexEntity struct {
 	Id              string                `json:"id"`
 	Pattern         string                `json:"pattern"`
 	SourceLocations []RegexSourceLocation `json:"sourceLocations"`
+	ForumLocations  []RegexForumLocation  `json:"forumLocations"`
+	Info            RegexInfo             `json:"info"`
 }
 
 func chunkSlice(slice []*dynamodb.WriteRequest, chunkSize int) [][]*dynamodb.WriteRequest {
@@ -59,6 +74,16 @@ func chunkSlice(slice []*dynamodb.WriteRequest, chunkSize int) [][]*dynamodb.Wri
 	}
 
 	return chunks
+}
+
+func truncateList(items []RegexForumLocation, maxSize int) []RegexForumLocation {
+
+	// Take the min between maxSize and items length
+	if maxSize > len(items) {
+		maxSize = len(items)
+	}
+
+	return items[0:maxSize]
 }
 
 func main() {
@@ -80,11 +105,6 @@ func main() {
 
 	log.Printf("Got %d entities\n", len(entities))
 
-	// Assign everything an ID
-	for idx := range entities {
-		entities[idx].Id = uuid.New().String()
-	}
-
 	// fix up the source line information
 	var fixedEntities []RegexEntity
 	for _, entity := range entities {
@@ -104,6 +124,9 @@ func main() {
 			Id:              entity.Id,
 			Pattern:         entity.Pattern,
 			SourceLocations: fixedLocations,
+			// TODO this is arbitrary but necessary for now
+			ForumLocations: truncateList(entity.ForumLocations, 15),
+			Info:           entity.Info,
 		})
 	}
 
@@ -139,6 +162,7 @@ func main() {
 
 		_, err = client.BatchWriteItem(&input)
 		if err != nil {
+			log.Printf("Failed entity: %v\n", req)
 			log.Fatalf("Error while performing write: %s\n", err.Error())
 		}
 

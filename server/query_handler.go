@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/regextools/protos/query_service"
 	"golang.org/x/net/context"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -17,19 +17,19 @@ type QueryRequest struct {
 }
 
 type QueryResponse struct {
-	Results   []string `json:"results"`
-	Total     uint64   `json:"total"`
-	CacheKey  string   `json:"cacheKey"`
-	PageSize  uint64   `json:"pageSize"`
-	PageNum   uint64   `json:"pageNum"`
-	PageCount uint64   `json:"pageCount"`
+	Results   []RegexEntity `json:"results"`
+	Total     uint64        `json:"total"`
+	CacheKey  string        `json:"cacheKey"`
+	PageSize  uint64        `json:"pageSize"`
+	PageNum   uint64        `json:"pageNum"`
+	PageCount uint64        `json:"pageCount"`
 }
 
-func makeQueryResponse(results *query_service.QueryResults, cacheKey string, request QueryRequest, pageCount uint64) QueryResponse {
+func makeQueryResponse(results []RegexEntity, cacheKey string, request QueryRequest, pageCount uint64) QueryResponse {
 	if request.PageRequest != nil {
 		return QueryResponse{
-			Results:   results.Results,
-			Total:     results.Total,
+			Results:   results,
+			Total:     uint64(len(results)),
 			PageSize:  request.PageRequest.PageSize,
 			PageNum:   request.PageRequest.PageNum,
 			CacheKey:  cacheKey,
@@ -37,9 +37,9 @@ func makeQueryResponse(results *query_service.QueryResults, cacheKey string, req
 		}
 	} else {
 		return QueryResponse{
-			Results:   results.Results,
-			Total:     results.Total,
-			PageSize:  results.Total,
+			Results:   results,
+			Total:     uint64(len(results)),
+			PageSize:  uint64(len(results)),
 			PageNum:   0,
 			CacheKey:  cacheKey,
 			PageCount: 1,
@@ -128,19 +128,33 @@ func QueryHandler(netCtx context.Context, resultTable *ResultTable, tracker *Par
 			return
 		}
 
+		// Get the ids for the results
+		var resultIds []string
+		for _, result := range results.Results {
+			resultIds = append(resultIds, result.Id)
+		}
+
+		log.Println("query_handler: got results from regexdb:")
+		log.Printf("%v\n", results.Results)
+
 		// Inflate the matching regexes
 		// TODO
-		_, err = regexRepo.GetRegexesById([]string{})
+		inflatedResults, err := regexRepo.GetRegexesById(resultIds)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "Failed to inflate regex entities"})
+			return
+		}
+		log.Printf("query_handler: got inflated results:\n%v\n", inflatedResults)
 
 		// Cache the results
-		cacheKey := resultTable.CacheResults(request, results)
+		cacheKey := resultTable.CacheResults(request, inflatedResults)
 
 		// If there is a page request, fulfill that
 		var totalPages uint64 = 1
 		if request.PageRequest != nil {
 			request.PageRequest.CacheKey = cacheKey
 
-			results, totalPages, err = resultTable.FetchResultsWithPage(*request.PageRequest)
+			inflatedResults, totalPages, err = resultTable.FetchResultsWithPage(*request.PageRequest)
 			if err != nil {
 				ctx.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
 				return
@@ -148,7 +162,7 @@ func QueryHandler(netCtx context.Context, resultTable *ResultTable, tracker *Par
 		}
 
 		// cache the results
-		response := makeQueryResponse(results, cacheKey, request, totalPages)
+		response := makeQueryResponse(inflatedResults, cacheKey, request, totalPages)
 
 		// track the response if there are query parameters
 		if participantId, taskId, areSet := shouldTrack(ctx); areSet {

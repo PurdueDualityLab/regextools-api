@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"github.com/patrickmn/go-cache"
-	"github.com/regextools/protos/query_service"
 	"hash/fnv"
 	"log"
 	"sort"
@@ -61,7 +60,7 @@ func NewResultTable() *ResultTable {
 	}
 }
 
-func (tab *ResultTable) CacheResults(request QueryRequest, results *query_service.QueryResults) string {
+func (tab *ResultTable) CacheResults(request QueryRequest, results []RegexEntity) string {
 	// Create a new cache key
 	cacheKey := HashQuery(request)
 	if len(cacheKey) == 0 {
@@ -75,16 +74,16 @@ func (tab *ResultTable) CacheResults(request QueryRequest, results *query_servic
 	return cacheKey
 }
 
-func (tab *ResultTable) FetchResults(key string) (*query_service.QueryResults, error) {
+func (tab *ResultTable) FetchResults(key string) ([]RegexEntity, error) {
 	if x, found := tab.cache.Get(key); found {
-		result := x.(*query_service.QueryResults)
+		result := x.([]RegexEntity)
 		return result, nil
 	} else {
 		return nil, errors.New("no results with that key exist")
 	}
 }
 
-func (tab *ResultTable) FetchResultsWithQuery(request QueryRequest) (*query_service.QueryResults, error) {
+func (tab *ResultTable) FetchResultsWithQuery(request QueryRequest) ([]RegexEntity, error) {
 	key := HashQuery(request)
 	if len(key) == 0 {
 		return nil, errors.New("could not create hash key")
@@ -93,15 +92,17 @@ func (tab *ResultTable) FetchResultsWithQuery(request QueryRequest) (*query_serv
 	return tab.FetchResults(key)
 }
 
-func (tab *ResultTable) FetchResultsWithPage(request PageRequest) (*query_service.QueryResults, uint64, error) {
+func (tab *ResultTable) FetchResultsWithPage(request PageRequest) ([]RegexEntity, uint64, error) {
 	// Actually get the results
 	results, err := tab.FetchResults(request.CacheKey)
 	if err != nil {
 		return nil, 0, err
 	}
 
+	totalResults := uint64(len(results))
+
 	// Divvy up the page
-	totalPageCount := (results.Total / request.PageSize) + 1 // round up
+	totalPageCount := (totalResults / request.PageSize) + 1 // round up
 	log.Printf("got %d pages", totalPageCount)
 	if request.PageNum >= totalPageCount {
 		return nil, 0, errors.New("invalid page request: bad page index")
@@ -110,15 +111,15 @@ func (tab *ResultTable) FetchResultsWithPage(request PageRequest) (*query_servic
 	// Get the bounds
 	startIdx := request.PageNum * request.PageSize
 	endIdx := startIdx + request.PageSize
-	if endIdx >= results.Total {
-		endIdx = results.Total - 1
+	if endIdx >= totalResults {
+		endIdx = totalResults - 1
 	}
 
 	// Page results
-	pageResults := make([]string, endIdx-startIdx)
-	copy(pageResults, results.Results[startIdx:endIdx])
+	pageResults := make([]RegexEntity, endIdx-startIdx)
+	copy(pageResults, results[startIdx:endIdx])
 
-	return &query_service.QueryResults{Results: pageResults, Total: results.Total}, totalPageCount, nil
+	return pageResults, totalPageCount, nil
 }
 
 func (tab *ResultTable) InvalidateResults(key string) {
