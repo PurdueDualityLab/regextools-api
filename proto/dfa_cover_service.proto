@@ -1,0 +1,29 @@
+
+syntax = "proto3";
+
+package regextools;
+
+option go_package = "github.co/regextools/protos/dfa_cover_service";
+
+message DfaCoverageRegexEntity {
+  string pattern = 1;
+  string id = 2;
+}
+
+message DfaCoverageRequest {
+  repeated DfaCoverageRegexEntity entities = 1;
+}
+
+message DfaCoverageInfo {
+  string id = 1;
+  bool success = 2;
+  float score = 3;
+}
+
+message DfaCoverageResponse {
+  repeated DfaCoverageInfo coverageInfo = 1;
+}
+
+service DfaCoverageService {
+  rpc ExecDfaCoverage(DfaCoverageRequest) returns (DfaCoverageResponse) {}
+}

@@ -15,7 +15,6 @@ message Query {
   repeated string negative = 2;
 }
 
-
 message QueryResults {
   uint64 total = 1;
   repeated RegexEntity results = 2;
