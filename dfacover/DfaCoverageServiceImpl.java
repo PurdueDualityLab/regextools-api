@@ -1,7 +1,10 @@
 package dfacover;
 
+import dk.brics.automaton.Automaton;
+import dk.brics.automaton.AutomatonCoverage;
 import dk.brics.automaton.BasicOperations;
 import dk.brics.automaton.DfaBudgetExceededException;
+import dk.brics.automaton.RegExp;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +28,7 @@ public class DfaCoverageServiceImpl extends DfaCoverageServiceGrpc.DfaCoverageSe
     @Override
     public void execDfaCoverage(DfaCoverService.DfaCoverageRequest request, StreamObserver<DfaCoverService.DfaCoverageResponse> responseObserver) {
 
-        logger.info("NOP scorer");
+        logger.info("Scorer");
 
         // basically just NOP for testing
         List<DfaCoverService.DfaCoverageInfo> coverageInfoList = request.getEntitiesList().stream()
@@ -46,7 +49,6 @@ public class DfaCoverageServiceImpl extends DfaCoverageServiceGrpc.DfaCoverageSe
                 })
                 .collect(Collectors.toList());
 
-        // TODO build this out
         DfaCoverService.DfaCoverageResponse response = DfaCoverService.DfaCoverageResponse.newBuilder()
                 .addAllCoverageInfo(coverageInfoList)
                 .build();
@@ -56,7 +58,21 @@ public class DfaCoverageServiceImpl extends DfaCoverageServiceGrpc.DfaCoverageSe
     }
 
     private double computeCoverageScore(DfaCoverService.DfaCoverageRegexEntity entity, Collection<String> positiveExamples, Collection<String> negativeExamples) {
-        logger.info("Got {} positive examples and {} negative examples", positiveExamples.size(), negativeExamples.size());
-        return 1;
+
+        // Build the dfa
+        Automaton entityAuto = new RegExp(entity.getPattern()).toAutomaton();
+        entityAuto.determinize();
+
+        AutomatonCoverage coverage = new AutomatonCoverage(entityAuto);
+
+        for (String positive : positiveExamples) {
+            coverage.evaluatePositive(positive);
+        }
+
+        for (String negative : negativeExamples) {
+            coverage.evaluateNegative(negative);
+        }
+
+        return coverage.getCoverageScore();
     }
 }
