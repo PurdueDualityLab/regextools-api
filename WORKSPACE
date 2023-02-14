@@ -3,7 +3,9 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
-# Set up go
+#############
+# Set up go #
+#############
 http_archive(
     name = "io_bazel_rules_go",
     sha256 = "16e9fca53ed6bd4ff4ad76facc9b7b651a89db1689a2877d6fd7b82aa824e366",
@@ -37,7 +39,10 @@ go_rules_dependencies()
 # gazelle_dependencies()
 gazelle_dependencies(go_sdk = "go_sdk")
 
-# Set up C++ dependencies
+##############
+# Set up C++ #
+##############
+
 # http_archive(
 #    name = "rules_cc",
 #    sha256 = "35f2fb4ea0b3e61ad64a369de284e4fbbdcdba71836a5555abb5e194cf119509",
@@ -137,9 +142,9 @@ new_git_repository(
     shallow_since = "1667954974 -0800",
 )
 
-###
-# Set up python
-###
+#################
+# Set up python #
+#################
 
 # Adds python language support
 http_archive(
@@ -162,8 +167,33 @@ load("@pip_deps//:requirements.bzl", pip_install_deps = "install_deps")
 
 pip_install_deps()
 
-###
-# Set up protcol buffers and gRPC
+###############
+# Set up java #
+###############
+RULES_JVM_EXTERNAL_TAG = "4.5"
+
+RULES_JVM_EXTERNAL_SHA = "b17d7388feb9bfa7f2fa09031b32707df529f26c91ab9e5d909eb1676badd9a6"
+
+http_archive(
+    name = "rules_jvm_external",
+    sha256 = RULES_JVM_EXTERNAL_SHA,
+    strip_prefix = "rules_jvm_external-%s" % RULES_JVM_EXTERNAL_TAG,
+    url = "https://github.com/bazelbuild/rules_jvm_external/archive/refs/tags/%s.zip" % RULES_JVM_EXTERNAL_TAG,
+)
+
+load("@rules_jvm_external//:repositories.bzl", "rules_jvm_external_deps")
+
+rules_jvm_external_deps()
+
+load("@rules_jvm_external//:setup.bzl", "rules_jvm_external_setup")
+
+rules_jvm_external_setup()
+
+load("@rules_jvm_external//:defs.bzl", "maven_install")
+
+###################################
+# Set up protocol buffers and gRPC #
+###################################
 http_archive(
     name = "rules_proto_grpc",
     sha256 = "bbe4db93499f5c9414926e46f9e35016999a4e9f6e3522482d3760dc61011070",
@@ -203,7 +233,33 @@ load("@rules_proto_grpc//go:repositories.bzl", rules_proto_grpc_go_repos = "go_r
 
 rules_proto_grpc_go_repos()
 
-# Set up docker
+load("@rules_proto_grpc//java:repositories.bzl", rules_proto_grpc_java_repos = "java_repos")
+
+rules_proto_grpc_java_repos()
+
+load("@io_grpc_grpc_java//:repositories.bzl", "IO_GRPC_GRPC_JAVA_ARTIFACTS", "IO_GRPC_GRPC_JAVA_OVERRIDE_TARGETS", "grpc_java_repositories")
+
+maven_install(
+    artifacts = IO_GRPC_GRPC_JAVA_ARTIFACTS + [
+        "org.slf4j:slf4j-api:2.0.6",
+        "org.slf4j:slf4j-simple:2.0.6",
+    ],
+    generate_compat_repositories = True,
+    override_targets = IO_GRPC_GRPC_JAVA_OVERRIDE_TARGETS,
+    repositories = [
+        "https://repo.maven.apache.org/maven2/",
+    ],
+)
+
+load("@maven//:compat.bzl", "compat_repositories")
+
+compat_repositories()
+
+grpc_java_repositories()
+
+#################
+# Set up docker #
+#################
 http_archive(
     name = "io_bazel_rules_docker",
     sha256 = "b1e80761a8a8243d03ebca8845e9cc1ba6c82ce7c5179ce2b295cd36f7e394bf",

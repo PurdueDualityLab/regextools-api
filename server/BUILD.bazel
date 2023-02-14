@@ -4,6 +4,7 @@ load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 go_library(
     name = "server_lib",
     srcs = [
+        "dfa_cover_client.go",
         "main.go",
         "paging.go",
         "participant_tracking.go",
@@ -14,6 +15,7 @@ go_library(
     importpath = "github.com/softwaresale/regextools-server/server",
     visibility = ["//visibility:private"],
     deps = [
+        "//proto:dfa_coverage_service_go",
         "//proto:query_service_go_proto",
         "@com_github_aws_aws_sdk_go//aws/session",
         "@com_github_aws_aws_sdk_go//service/dynamodb",

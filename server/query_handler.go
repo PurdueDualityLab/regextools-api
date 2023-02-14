@@ -69,6 +69,28 @@ func getRegexDBString(defaultHost string, defaultPort int) (string, error) {
 	return fmt.Sprintf("%s:%d", envHost, envPort), nil
 }
 
+func getDfaCoverageString(defaultHost string, defaultPort int) (string, error) {
+	var err error
+	envHost := os.Getenv("DFA_COVER_HOST")
+	if len(envHost) == 0 {
+		// host is not set, so use default
+		envHost = defaultHost
+	}
+
+	envPortStr := os.Getenv("DFA_COVER_PORT")
+	var envPort int
+	if len(envPortStr) == 0 {
+		envPort = defaultPort
+	} else {
+		envPort, err = strconv.Atoi(envPortStr)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return fmt.Sprintf("%s:%d", envHost, envPort), nil
+}
+
 func shouldTrack(ctx *gin.Context) (string, string, bool) {
 	participantId, hasParticipantId := ctx.GetQuery("participantId")
 	taskId, hasTaskId := ctx.GetQuery("taskId")
@@ -145,6 +167,22 @@ func QueryHandler(netCtx context.Context, resultTable *ResultTable, tracker *Par
 			return
 		}
 		log.Printf("query_handler: got inflated results:\n%v\n", inflatedResults)
+
+		coverConnStr, err := getDfaCoverageString("0.0.0.0", 50052)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"msg": err.Error()})
+			return
+		}
+
+		// Sort by coverage metric
+		coverClient, err := NewDfaCoverageClient(netCtx, coverConnStr)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "Could not create regex coverage client"})
+			return
+		}
+		defer coverClient.Close()
+
+		inflatedResults, err = coverClient.SortByCoverage(inflatedResults)
 
 		// Cache the results
 		cacheKey := resultTable.CacheResults(request, inflatedResults)
