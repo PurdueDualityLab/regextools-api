@@ -295,6 +295,19 @@ load(
     "@io_bazel_rules_docker//container:container.bzl",
     "container_pull",
 )
+load(
+    "@io_bazel_rules_docker//repositories:repositories.bzl",
+    container_repositories = "repositories",
+)
+
+container_repositories()
+
+load(
+    "@io_bazel_rules_docker//java:image.bzl",
+    _java_image_repos = "repositories",
+)
+
+_java_image_repos()
 
 container_pull(
     name = "ubuntu_linux_amd64",

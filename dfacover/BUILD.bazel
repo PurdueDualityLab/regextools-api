@@ -1,5 +1,18 @@
+load("@io_bazel_rules_docker//java:image.bzl", "java_image")
+
 java_binary(
     name = "dfacover",
+    srcs = glob(["*.java"]),
+    main_class = "dfacover.DfaCoverageServiceMain",
+    deps = [
+        "//proto:dfa_coverage_service_java",
+        "@maven//:org_slf4j_slf4j_api",
+        "@maven//:org_slf4j_slf4j_simple",
+    ],
+)
+
+java_image(
+    name = "image",
     srcs = glob(["*.java"]),
     main_class = "dfacover.DfaCoverageServiceMain",
     deps = [
