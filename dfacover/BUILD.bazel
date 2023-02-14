@@ -6,6 +6,7 @@ java_binary(
     main_class = "dfacover.DfaCoverageServiceMain",
     deps = [
         "//proto:dfa_coverage_service_java",
+        "@com_github_dualitylab_brics//src/dk/brics/automaton:brics",
         "@maven//:org_slf4j_slf4j_api",
         "@maven//:org_slf4j_slf4j_simple",
     ],
@@ -17,6 +18,7 @@ java_image(
     main_class = "dfacover.DfaCoverageServiceMain",
     deps = [
         "//proto:dfa_coverage_service_java",
+        "@com_github_dualitylab_brics//src/dk/brics/automaton:brics",
         "@maven//:org_slf4j_slf4j_api",
         "@maven//:org_slf4j_slf4j_simple",
     ],

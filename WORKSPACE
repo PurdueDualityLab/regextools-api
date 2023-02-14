@@ -191,6 +191,13 @@ rules_jvm_external_setup()
 
 load("@rules_jvm_external//:defs.bzl", "maven_install")
 
+# Duality lab fork for brics. Has DFA budgeting in it
+git_repository(
+    name = "com_github_dualitylab_brics",
+    branch = "master",
+    remote = "git@github.com:PurdueDualityLab/dk.brics.automaton.git",
+)
+
 ###################################
 # Set up protocol buffers and gRPC #
 ###################################

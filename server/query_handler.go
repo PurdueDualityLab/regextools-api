@@ -182,7 +182,7 @@ func QueryHandler(netCtx context.Context, resultTable *ResultTable, tracker *Par
 		}
 		defer coverClient.Close()
 
-		inflatedResults, err = coverClient.SortByCoverage(inflatedResults)
+		inflatedResults, err = coverClient.SortByCoverage(inflatedResults, request.Positive, request.Negative)
 
 		// Cache the results
 		cacheKey := resultTable.CacheResults(request, inflatedResults)

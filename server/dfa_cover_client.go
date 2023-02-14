@@ -28,7 +28,7 @@ func NewDfaCoverageClient(ctx context.Context, dest string) (*DfaCoverageClient,
 
 // SortByCoverage - given a list of entities, orders them based on DFA coverage
 // entities that error out are at the bottom of the list
-func (conn DfaCoverageClient) SortByCoverage(entities []RegexEntity) ([]RegexEntity, error) {
+func (conn DfaCoverageClient) SortByCoverage(entities []RegexEntity, positive, negative []string) ([]RegexEntity, error) {
 
 	entityMap := make(map[string]RegexEntity)
 	for _, entity := range entities {
@@ -44,7 +44,11 @@ func (conn DfaCoverageClient) SortByCoverage(entities []RegexEntity) ([]RegexEnt
 		coverageEntities = append(coverageEntities, covEnt)
 	}
 
-	request := dfa_cover_service.DfaCoverageRequest{Entities: coverageEntities}
+	request := dfa_cover_service.DfaCoverageRequest{
+		Entities: coverageEntities,
+		Positive: positive,
+		Negative: negative,
+	}
 
 	response, err := conn.Client.ExecDfaCoverage(conn.Context, &request)
 	if err != nil {

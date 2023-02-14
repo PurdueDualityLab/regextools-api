@@ -12,12 +12,14 @@ message DfaCoverageRegexEntity {
 
 message DfaCoverageRequest {
   repeated DfaCoverageRegexEntity entities = 1;
+  repeated string positive = 2;
+  repeated string negative = 3;
 }
 
 message DfaCoverageInfo {
   string id = 1;
   bool success = 2;
-  float score = 3;
+  double score = 3;
 }
 
 message DfaCoverageResponse {
