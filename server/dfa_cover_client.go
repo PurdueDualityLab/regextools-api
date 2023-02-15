@@ -74,8 +74,13 @@ func (conn DfaCoverageClient) SortByCoverage(entities []RegexEntity, positive, n
 			return false
 		}
 
-		// Both succeeded, so compare the scores
-		return left.Score > right.Score
+		// Both succeeded. Tie-break with feature count. Take fewer features
+		// TODO - use the score in the future. It's not quite ready yet as of now...
+		if left.Score == right.Score {
+			return entityMap[left.Id].Info.FeatureCount < entityMap[right.Id].Info.FeatureCount
+		} else {
+			return left.Score > right.Score
+		}
 	})
 
 	var sortedEntities []RegexEntity

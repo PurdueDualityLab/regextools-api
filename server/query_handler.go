@@ -150,17 +150,18 @@ func QueryHandler(netCtx context.Context, resultTable *ResultTable, tracker *Par
 			return
 		}
 
+		// TODO do caching and paging here
+
 		// Get the ids for the results
 		var resultIds []string
 		for _, result := range results.Results {
 			resultIds = append(resultIds, result.Id)
 		}
 
-		log.Println("query_handler: got results from regexdb:")
-		log.Printf("%v\n", results.Results)
+		log.Printf("query_handler: got %d results from regexdb:%n", len(resultIds))
 
 		// Inflate the matching regexes
-		// TODO
+		// TODO only inflate the page, not the whole payload
 		inflatedResults, err := regexRepo.GetRegexesById(resultIds)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "Failed to inflate regex entities"})
@@ -175,6 +176,7 @@ func QueryHandler(netCtx context.Context, resultTable *ResultTable, tracker *Par
 		}
 
 		// Sort by coverage metric
+		// TODO sorting should still happen after inflation
 		coverClient, err := NewDfaCoverageClient(netCtx, coverConnStr)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"msg": "Could not create regex coverage client"})
@@ -185,9 +187,11 @@ func QueryHandler(netCtx context.Context, resultTable *ResultTable, tracker *Par
 		inflatedResults, err = coverClient.SortByCoverage(inflatedResults, request.Positive, request.Negative)
 
 		// Cache the results
+		// TODO move up
 		cacheKey := resultTable.CacheResults(request, inflatedResults)
 
 		// If there is a page request, fulfill that
+		// TODO move up
 		var totalPages uint64 = 1
 		if request.PageRequest != nil {
 			request.PageRequest.CacheKey = cacheKey
