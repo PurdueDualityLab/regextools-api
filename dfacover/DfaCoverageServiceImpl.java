@@ -38,7 +38,7 @@ public class DfaCoverageServiceImpl extends DfaCoverageServiceGrpc.DfaCoverageSe
                     try {
                         score = computeCoverageScore(entity, request.getPositiveList(), request.getNegativeList());
                         success = true;
-                    } catch (DfaBudgetExceededException ignored) {
+                    } catch (DfaBudgetExceededException | IllegalArgumentException ignored) {
                     }
 
                     return DfaCoverService.DfaCoverageInfo.newBuilder()
