@@ -188,8 +188,6 @@ func QueryHandler(netCtx context.Context, resultTable *ResultTable, tracker *Par
 			return
 		}
 
-		log.Printf("query_handler: got %d inflated results, same as results? %b", len(inflatedResults), len(inflatedResults) == len(resultIds))
-
 		coverConnStr, err := getDfaCoverageString("0.0.0.0", 50052)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"msg": err.Error()})

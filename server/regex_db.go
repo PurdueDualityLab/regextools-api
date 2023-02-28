@@ -4,7 +4,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"log"
 	"sort"
 )
 
@@ -82,8 +81,6 @@ func (repo RegexEntityRepository) GetRegexesById(ids []string) ([]RegexEntity, e
 
 // getRegexesByIdUncheckedSize - actually performs the request, but doesn't do any chunking
 func (repo RegexEntityRepository) getRegexesByIdUncheckedSize(ids []string) ([]RegexEntity, error) {
-
-	log.Printf("regex_db: retrieving regexes with ids: %v\n", ids)
 
 	// Set up the request map
 	var requestIds []map[string]*dynamodb.AttributeValue
