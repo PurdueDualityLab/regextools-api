@@ -56,7 +56,32 @@ func NewRegexEntityRepository() *RegexEntityRepository {
 	}
 }
 
+// GetRegexesById - inflates regex entities by id. Size can be whatever
 func (repo RegexEntityRepository) GetRegexesById(ids []string) ([]RegexEntity, error) {
+	var totalEntities []RegexEntity
+
+	// If there are more than 100 results, we need to chunk the results
+	idChunks := [][]string{ids}
+	if len(ids) > 100 {
+		idChunks = ChunkSlice(ids, 100)
+	}
+
+	for _, idChunk := range idChunks {
+		entities, err := repo.getRegexesByIdUncheckedSize(idChunk)
+		if err != nil {
+			return []RegexEntity{}, err
+		}
+
+		for _, entity := range entities {
+			totalEntities = append(totalEntities, entity)
+		}
+	}
+
+	return totalEntities, nil
+}
+
+// getRegexesByIdUncheckedSize - actually performs the request, but doesn't do any chunking
+func (repo RegexEntityRepository) getRegexesByIdUncheckedSize(ids []string) ([]RegexEntity, error) {
 
 	log.Printf("regex_db: retrieving regexes with ids: %v\n", ids)
 
@@ -83,8 +108,6 @@ func (repo RegexEntityRepository) GetRegexesById(ids []string) ([]RegexEntity, e
 	if err != nil {
 		return []RegexEntity{}, err
 	}
-
-	log.Printf("regex_db: got results: %v\n", result.Responses)
 
 	var entities []RegexEntity
 	err = dynamodbattribute.UnmarshalListOfMaps(result.Responses[repo.tableName], &entities)

@@ -50,6 +50,11 @@ type PageRequest struct {
 	PageSize uint64 `json:"pageSize"`
 }
 
+type ResultTableEntry struct {
+	Entities      []RegexEntity
+	TotalEntities uint
+}
+
 type ResultTable struct {
 	cache *cache.Cache // The actual cache of items
 }
@@ -92,20 +97,27 @@ func (tab *ResultTable) FetchResultsWithQuery(request QueryRequest) ([]RegexEnti
 	return tab.FetchResults(key)
 }
 
-func (tab *ResultTable) FetchResultsWithPage(request PageRequest) ([]RegexEntity, uint64, error) {
+func (tab *ResultTable) FetchResultsWithPage(request PageRequest) ([]RegexEntity, uint64, uint64, error) {
 	// Actually get the results
 	results, err := tab.FetchResults(request.CacheKey)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, 0, err
 	}
 
 	totalResults := uint64(len(results))
 
 	// Divvy up the page
-	totalPageCount := (totalResults / request.PageSize) + 1 // round up
+	var totalPageCount uint64
+	if request.PageSize > 0 {
+		totalPageCount = (totalResults / request.PageSize) + 1 // round up
+	} else {
+		// If the page size is 0, then just say there's one page?? that seems to make sense and
+		// will eliminate divide by zero issues
+		totalPageCount = 1
+	}
 	log.Printf("got %d pages", totalPageCount)
 	if request.PageNum >= totalPageCount {
-		return nil, 0, errors.New("invalid page request: bad page index")
+		return nil, 0, 0, errors.New("invalid page request: bad page index")
 	}
 
 	// Get the bounds
@@ -119,7 +131,7 @@ func (tab *ResultTable) FetchResultsWithPage(request PageRequest) ([]RegexEntity
 	pageResults := make([]RegexEntity, endIdx-startIdx)
 	copy(pageResults, results[startIdx:endIdx])
 
-	return pageResults, totalPageCount, nil
+	return pageResults, totalPageCount, totalResults, nil
 }
 
 func (tab *ResultTable) InvalidateResults(key string) {
