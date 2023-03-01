@@ -36,7 +36,7 @@ public class DfaCoverageServiceImpl extends DfaCoverageServiceGrpc.DfaCoverageSe
                     double score = 0;
                     boolean success = false;
                     try {
-                        score = computeCoverageScore(entity, request.getPositiveList(), request.getNegativeList());
+                        score = computeCoverageScore(entity.getPattern(), request.getPositiveList(), request.getNegativeList());
                         success = true;
                     } catch (DfaBudgetExceededException | IllegalArgumentException ignored) {
                     }
@@ -57,10 +57,36 @@ public class DfaCoverageServiceImpl extends DfaCoverageServiceGrpc.DfaCoverageSe
         responseObserver.onCompleted();
     }
 
-    private double computeCoverageScore(DfaCoverService.DfaCoverageRegexEntity entity, Collection<String> positiveExamples, Collection<String> negativeExamples) {
+    @Override
+    public void execDfaSingleCoverage(DfaCoverService.DfaSingleCoverageRequest request, StreamObserver<DfaCoverService.DfaSingleCoverageResponse> responseObserver) {
+        Automaton entityAuto = new RegExp(request.getRegex()).toAutomaton();
+        entityAuto.determinize();
+
+        AutomatonCoverage coverage = new AutomatonCoverage(entityAuto);
+
+        // Evaluate the things
+        for (String positive : request.getPositiveList()) {
+            coverage.evaluatePositive(positive);
+        }
+
+        for (String negative : request.getNegativeList()) {
+            coverage.evaluateNegative(negative);
+        }
+
+        DfaCoverService.DfaSingleCoverageResponse response = DfaCoverService.DfaSingleCoverageResponse.newBuilder()
+                .setTotal((float) coverage.getCoverageScore())
+                .setPositive((float) coverage.getPositiveCoverageScore())
+                .setNegative((float) coverage.getNegativeCoverageScore())
+                .build();
+
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
+
+    private double computeCoverageScore(String pattern, Collection<String> positiveExamples, Collection<String> negativeExamples) {
 
         // Build the dfa
-        Automaton entityAuto = new RegExp(entity.getPattern()).toAutomaton();
+        Automaton entityAuto = new RegExp(pattern).toAutomaton();
         entityAuto.determinize();
 
         AutomatonCoverage coverage = new AutomatonCoverage(entityAuto);

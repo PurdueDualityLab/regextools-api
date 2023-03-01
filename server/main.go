@@ -19,6 +19,7 @@ func main() {
 	router := gin.Default()
 	router.Use(cors.Default())
 	router.POST("/query", QueryHandler(ctx, resultTable, tracker, repo))
+	router.POST("/coverage", CoverHandler(ctx))
 
 	err = router.Run()
 	if err != nil {

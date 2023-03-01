@@ -52,6 +52,7 @@ type PageRequest struct {
 
 type ResultTableEntry struct {
 	Entities      []RegexEntity
+	Scores        []float64
 	TotalEntities uint
 }
 
@@ -65,7 +66,7 @@ func NewResultTable() *ResultTable {
 	}
 }
 
-func (tab *ResultTable) CacheResults(request QueryRequest, results []RegexEntity) string {
+func (tab *ResultTable) CacheResults(request QueryRequest, results []RegexEntity, scores []float64) string {
 	// Create a new cache key
 	cacheKey := HashQuery(request)
 	if len(cacheKey) == 0 {
@@ -74,34 +75,39 @@ func (tab *ResultTable) CacheResults(request QueryRequest, results []RegexEntity
 	}
 
 	// Cache the result
-	tab.cache.Set(cacheKey, results, cache.DefaultExpiration)
+	entry := ResultTableEntry{
+		Entities:      results,
+		Scores:        scores,
+		TotalEntities: uint(len(results)),
+	}
+	tab.cache.Set(cacheKey, entry, cache.DefaultExpiration)
 
 	return cacheKey
 }
 
-func (tab *ResultTable) FetchResults(key string) ([]RegexEntity, error) {
+func (tab *ResultTable) FetchResults(key string) ([]RegexEntity, []float64, error) {
 	if x, found := tab.cache.Get(key); found {
-		result := x.([]RegexEntity)
-		return result, nil
+		result := x.(ResultTableEntry)
+		return result.Entities, result.Scores, nil
 	} else {
-		return nil, errors.New("no results with that key exist")
+		return nil, nil, errors.New("no results with that key exist")
 	}
 }
 
-func (tab *ResultTable) FetchResultsWithQuery(request QueryRequest) ([]RegexEntity, error) {
+func (tab *ResultTable) FetchResultsWithQuery(request QueryRequest) ([]RegexEntity, []float64, error) {
 	key := HashQuery(request)
 	if len(key) == 0 {
-		return nil, errors.New("could not create hash key")
+		return nil, nil, errors.New("could not create hash key")
 	}
 
 	return tab.FetchResults(key)
 }
 
-func (tab *ResultTable) FetchResultsWithPage(request PageRequest) ([]RegexEntity, uint64, uint64, error) {
+func (tab *ResultTable) FetchResultsWithPage(request PageRequest) ([]RegexEntity, []float64, uint64, uint64, error) {
 	// Actually get the results
-	results, err := tab.FetchResults(request.CacheKey)
+	results, scores, err := tab.FetchResults(request.CacheKey)
 	if err != nil {
-		return nil, 0, 0, err
+		return nil, nil, 0, 0, err
 	}
 
 	totalResults := uint64(len(results))
@@ -117,7 +123,7 @@ func (tab *ResultTable) FetchResultsWithPage(request PageRequest) ([]RegexEntity
 	}
 	log.Printf("got %d pages", totalPageCount)
 	if request.PageNum >= totalPageCount {
-		return nil, 0, 0, errors.New("invalid page request: bad page index")
+		return nil, nil, 0, 0, errors.New("invalid page request: bad page index")
 	}
 
 	// Get the bounds
@@ -130,8 +136,10 @@ func (tab *ResultTable) FetchResultsWithPage(request PageRequest) ([]RegexEntity
 	// Page results
 	pageResults := make([]RegexEntity, endIdx-startIdx)
 	copy(pageResults, results[startIdx:endIdx])
+	pageScores := make([]float64, endIdx-startIdx)
+	copy(pageScores, scores[startIdx:endIdx])
 
-	return pageResults, totalPageCount, totalResults, nil
+	return pageResults, pageScores, totalPageCount, totalResults, nil
 }
 
 func (tab *ResultTable) InvalidateResults(key string) {

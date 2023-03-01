@@ -17,32 +17,36 @@ type QueryRequest struct {
 }
 
 type QueryResponse struct {
-	Results   []RegexEntity `json:"results"`
-	Total     uint64        `json:"total"`
-	CacheKey  string        `json:"cacheKey"`
-	PageSize  uint64        `json:"pageSize"`
-	PageNum   uint64        `json:"pageNum"`
-	PageCount uint64        `json:"pageCount"`
+	Results    []RegexEntity `json:"results"`
+	SortScores []float64     `json:"sortScores"`
+	Total      uint64        `json:"total"`
+	CacheKey   string        `json:"cacheKey"`
+	PageSize   uint64        `json:"pageSize"`
+	PageNum    uint64        `json:"pageNum"`
+	PageCount  uint64        `json:"pageCount"`
 }
 
-func makeQueryResponse(results []RegexEntity, totalElements uint64, cacheKey string, request QueryRequest, pageCount uint64) QueryResponse {
+// TODO wrap some of the args into a struct
+func makeQueryResponse(results []RegexEntity, scores []float64, totalElements uint64, cacheKey string, request QueryRequest, pageCount uint64) QueryResponse {
 	if request.PageRequest != nil {
 		return QueryResponse{
-			Results:   results,
-			Total:     totalElements,
-			PageSize:  request.PageRequest.PageSize,
-			PageNum:   request.PageRequest.PageNum,
-			CacheKey:  cacheKey,
-			PageCount: pageCount,
+			Results:    results,
+			SortScores: scores,
+			Total:      totalElements,
+			PageSize:   request.PageRequest.PageSize,
+			PageNum:    request.PageRequest.PageNum,
+			CacheKey:   cacheKey,
+			PageCount:  pageCount,
 		}
 	} else {
 		return QueryResponse{
-			Results:   results,
-			Total:     totalElements,
-			PageSize:  uint64(len(results)),
-			PageNum:   0,
-			CacheKey:  cacheKey,
-			PageCount: 1,
+			Results:    results,
+			SortScores: scores,
+			Total:      totalElements,
+			PageSize:   uint64(len(results)),
+			PageNum:    0,
+			CacheKey:   cacheKey,
+			PageCount:  1,
 		}
 	}
 }
@@ -69,28 +73,6 @@ func getRegexDBString(defaultHost string, defaultPort int) (string, error) {
 	return fmt.Sprintf("%s:%d", envHost, envPort), nil
 }
 
-func getDfaCoverageString(defaultHost string, defaultPort int) (string, error) {
-	var err error
-	envHost := os.Getenv("DFA_COVER_HOST")
-	if len(envHost) == 0 {
-		// host is not set, so use default
-		envHost = defaultHost
-	}
-
-	envPortStr := os.Getenv("DFA_COVER_PORT")
-	var envPort int
-	if len(envPortStr) == 0 {
-		envPort = defaultPort
-	} else {
-		envPort, err = strconv.Atoi(envPortStr)
-		if err != nil {
-			return "", err
-		}
-	}
-
-	return fmt.Sprintf("%s:%d", envHost, envPort), nil
-}
-
 func shouldTrack(ctx *gin.Context) (string, string, bool) {
 	participantId, hasParticipantId := ctx.GetQuery("participantId")
 	taskId, hasTaskId := ctx.GetQuery("taskId")
@@ -98,29 +80,30 @@ func shouldTrack(ctx *gin.Context) (string, string, bool) {
 	return participantId, taskId, hasParticipantId && hasTaskId
 }
 
-func tryCachedEntry(request QueryRequest, resultTable *ResultTable) ([]RegexEntity, uint64, uint64, bool, error) {
+// TODO return a struct instead...
+func tryCachedEntry(request QueryRequest, resultTable *ResultTable) ([]RegexEntity, []float64, uint64, uint64, bool, error) {
 	if request.PageRequest != nil {
 		if len(request.PageRequest.CacheKey) == 0 {
 			// do nothing. We still have the paging stuff here so that we can still page off the bat
-			return []RegexEntity{}, 0, 0, false, nil
+			return []RegexEntity{}, nil, 0, 0, false, nil
 		} else if HashQuery(request) != request.PageRequest.CacheKey && len(request.Positive) > 0 && len(request.Negative) > 0 {
 			// If the request and the key are different, we should invalidate the old result
 			resultTable.InvalidateResults(request.PageRequest.CacheKey)
 			// keep going -- don't return
-			return []RegexEntity{}, 0, 0, false, nil
+			return []RegexEntity{}, nil, 0, 0, false, nil
 		} else {
 			// The query has not changed, so we can get these results
-			results, pageCount, totalElements, err := resultTable.FetchResultsWithPage(*request.PageRequest)
+			results, resultScores, pageCount, totalElements, err := resultTable.FetchResultsWithPage(*request.PageRequest)
 			if err != nil {
 				// TODO error handling
-				return []RegexEntity{}, 0, 0, false, err
+				return []RegexEntity{}, nil, 0, 0, false, err
 			}
 
-			return results, pageCount, totalElements, true, nil
+			return results, resultScores, pageCount, totalElements, true, nil
 		}
 	} else {
 		// we don't even want to page...
-		return []RegexEntity{}, 0, 0, false, nil
+		return []RegexEntity{}, nil, 0, 0, false, nil
 	}
 }
 
@@ -137,14 +120,14 @@ func QueryHandler(netCtx context.Context, resultTable *ResultTable, tracker *Par
 		/*
 			First, try finding a cached entry
 		*/
-		cachedResults, cachedTotalPageCount, cachedTotalElements, didFindEntry, err := tryCachedEntry(request, resultTable)
+		cachedResults, cachedScores, cachedTotalPageCount, cachedTotalElements, didFindEntry, err := tryCachedEntry(request, resultTable)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
 			return
 		}
 
 		if didFindEntry {
-			response := makeQueryResponse(cachedResults, cachedTotalElements, request.PageRequest.CacheKey, request, cachedTotalPageCount)
+			response := makeQueryResponse(cachedResults, cachedScores, cachedTotalElements, request.PageRequest.CacheKey, request, cachedTotalPageCount)
 			ctx.JSON(http.StatusOK, response)
 			return
 		}
@@ -188,7 +171,7 @@ func QueryHandler(netCtx context.Context, resultTable *ResultTable, tracker *Par
 			return
 		}
 
-		coverConnStr, err := getDfaCoverageString("0.0.0.0", 50052)
+		coverConnStr, err := GetDfaCoverageString("0.0.0.0", 50052)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"msg": err.Error()})
 			return
@@ -203,24 +186,23 @@ func QueryHandler(netCtx context.Context, resultTable *ResultTable, tracker *Par
 		}
 		defer coverClient.Close()
 
-		inflatedResults, err = coverClient.SortByCoverage(inflatedResults, request.Positive, request.Negative)
+		var sortingScores []float64
+		inflatedResults, sortingScores, err = coverClient.SortByCoverage(inflatedResults, request.Positive, request.Negative)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"msg": fmt.Sprintf("Error while sorting by coverage: %s", err.Error())})
 			return
 		}
 
 		// Cache the results
-		// TODO move up
-		cacheKey := resultTable.CacheResults(request, inflatedResults)
+		cacheKey := resultTable.CacheResults(request, inflatedResults, sortingScores)
 
 		// If there is a page request, fulfill that
-		// TODO move up
 		var totalPages uint64 = 1
 		var totalElements uint64 = 0
 		if request.PageRequest != nil {
 			request.PageRequest.CacheKey = cacheKey
 
-			inflatedResults, totalPages, totalElements, err = resultTable.FetchResultsWithPage(*request.PageRequest)
+			inflatedResults, sortingScores, totalPages, totalElements, err = resultTable.FetchResultsWithPage(*request.PageRequest)
 			if err != nil {
 				ctx.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
 				return
@@ -228,7 +210,7 @@ func QueryHandler(netCtx context.Context, resultTable *ResultTable, tracker *Par
 		}
 
 		// cache the results
-		response := makeQueryResponse(inflatedResults, totalElements, cacheKey, request, totalPages)
+		response := makeQueryResponse(inflatedResults, sortingScores, totalElements, cacheKey, request, totalPages)
 
 		// track the response if there are query parameters
 		if participantId, taskId, areSet := shouldTrack(ctx); areSet {

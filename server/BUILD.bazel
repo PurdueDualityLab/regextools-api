@@ -5,6 +5,7 @@ go_library(
     name = "server_lib",
     srcs = [
         "chunk.go",
+        "cover_handler.go",
         "dfa_cover_client.go",
         "main.go",
         "paging.go",

@@ -1,11 +1,14 @@
 package main
 
 import (
+	"fmt"
 	dfa_cover_service "github.com/regextools/protos/dfa_cover_serivce"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"os"
 	"sort"
+	"strconv"
 )
 
 type DfaCoverageClient struct {
@@ -28,7 +31,7 @@ func NewDfaCoverageClient(ctx context.Context, dest string) (*DfaCoverageClient,
 
 // SortByCoverage - given a list of entities, orders them based on DFA coverage
 // entities that error out are at the bottom of the list
-func (conn DfaCoverageClient) SortByCoverage(entities []RegexEntity, positive, negative []string) ([]RegexEntity, error) {
+func (conn DfaCoverageClient) SortByCoverage(entities []RegexEntity, positive, negative []string) ([]RegexEntity, []float64, error) {
 
 	entityMap := make(map[string]RegexEntity)
 	for _, entity := range entities {
@@ -52,7 +55,13 @@ func (conn DfaCoverageClient) SortByCoverage(entities []RegexEntity, positive, n
 
 	response, err := conn.Client.ExecDfaCoverage(conn.Context, &request)
 	if err != nil {
-		return []RegexEntity{}, err
+		return []RegexEntity{}, []float64{}, err
+	}
+
+	// Make a quick lil map for string the scores. After we sort, we can return an array of scores and send those over
+	scoreMap := make(map[string]float64)
+	for _, info := range response.CoverageInfo {
+		scoreMap[info.Id] = info.Score
 	}
 
 	sortedCoverageInfo := response.CoverageInfo
@@ -88,9 +97,46 @@ func (conn DfaCoverageClient) SortByCoverage(entities []RegexEntity, positive, n
 		sortedEntities = append(sortedEntities, entityMap[info.Id])
 	}
 
-	return sortedEntities, nil
+	var scores []float64
+	for _, entity := range sortedEntities {
+		scores = append(scores, scoreMap[entity.Id])
+	}
+
+	return sortedEntities, scores, nil
+}
+
+func (conn DfaCoverageClient) GetSingleCoverage(regex string, positive, negative []string) (*dfa_cover_service.DfaSingleCoverageResponse, error) {
+	request := dfa_cover_service.DfaSingleCoverageRequest{
+		Regex:    regex,
+		Positive: positive,
+		Negative: negative,
+	}
+
+	return conn.Client.ExecDfaSingleCoverage(conn.Context, &request)
 }
 
 func (conn DfaCoverageClient) Close() error {
 	return conn.Connection.Close()
+}
+
+func GetDfaCoverageString(defaultHost string, defaultPort int) (string, error) {
+	var err error
+	envHost := os.Getenv("DFA_COVER_HOST")
+	if len(envHost) == 0 {
+		// host is not set, so use default
+		envHost = defaultHost
+	}
+
+	envPortStr := os.Getenv("DFA_COVER_PORT")
+	var envPort int
+	if len(envPortStr) == 0 {
+		envPort = defaultPort
+	} else {
+		envPort, err = strconv.Atoi(envPortStr)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return fmt.Sprintf("%s:%d", envHost, envPort), nil
 }

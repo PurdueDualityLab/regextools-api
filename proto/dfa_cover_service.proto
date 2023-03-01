@@ -26,6 +26,19 @@ message DfaCoverageResponse {
   repeated DfaCoverageInfo coverageInfo = 1;
 }
 
+message DfaSingleCoverageRequest {
+  string regex = 1;
+  repeated string positive = 2;
+  repeated string negative = 3;
+}
+
+message DfaSingleCoverageResponse {
+  float total = 1;
+  float positive = 2;
+  float negative = 3;
+}
+
 service DfaCoverageService {
   rpc ExecDfaCoverage(DfaCoverageRequest) returns (DfaCoverageResponse) {}
+  rpc ExecDfaSingleCoverage(DfaSingleCoverageRequest) returns (DfaSingleCoverageResponse) {}
 }
