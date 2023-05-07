@@ -1,0 +1,12 @@
+cc_binary(
+    name = "evaluation",
+    srcs = [
+        "main.cc",
+        "regex_entity.h",
+        "use_case.cc",
+        "use_case.h",
+    ],
+    deps = [
+        "//librereuse:rereuse",
+    ],
+)

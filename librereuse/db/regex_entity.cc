@@ -3,6 +3,8 @@
 //
 
 #include "regex_entity.h"
+#include "evaluation/regex_entity.h"
+
 
 #include <utility>
 
@@ -13,5 +15,7 @@ RegexEntity::RegexEntity(std::string pattern,
 : pattern(std::move(pattern))
 , id(std::move(id))
 {}
+
+
 
 } // db
